@@ -1,0 +1,30 @@
+[project]
+name = "zdcurtain"
+version = "0.1.0"
+description = "Load remover and autosplitter for Metroid Dread"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=2.3.2",
+    "opencv-contrib-python-headless>=4.11.0.86",
+    "pygrabber>=0.2",
+    "pyinstaller>=6.14.2",
+    "pyside6-essentials>=6.9.1",
+    "pywin32>=311",
+    "pywinctl>=0.4.1",
+    "tomli-w>=1.2.0",
+    "typed-d3dshot>=1.0.1",
+    "winrt-windows-foundation>=3.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "types-pywin32>=311.0.0.20250723",
+    "winrt-windows-graphics>=3.2.1",
+    "winrt-windows-graphics-capture>=3.2.1",
+    "winrt-windows-graphics-capture-interop>=3.2.1",
+    "winrt-windows-graphics-directx>=3.2.1",
+    "winrt-windows-graphics-directx-direct3d11>=3.2.1",
+    "winrt-windows-graphics-directx-direct3d11-interop>=3.2.1",
+    "winrt-windows-graphics-imaging>=3.2.1",
+]
