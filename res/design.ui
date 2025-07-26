@@ -7,20 +7,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>786</width>
-    <height>426</height>
+    <width>1400</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>786</width>
-    <height>426</height>
+    <width>1500</width>
+    <height>800</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>786</width>
-    <height>426</height>
+    <width>1500</width>
+    <height>800</height>
    </size>
   </property>
   <property name="font">
@@ -32,26 +32,13 @@
    <string>ZDCurtain</string>
   </property>
   <widget class="QWidget" name="central_widget">
-   <widget class="QLabel" name="fps_label">
-    <property name="geometry">
-     <rect>
-      <x>92</x>
-      <y>272</y>
-      <width>21</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>FPS</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="live_image">
     <property name="geometry">
      <rect>
-      <x>127</x>
-      <y>67</y>
-      <width>320</width>
-      <height>240</height>
+      <x>4</x>
+      <y>4</y>
+      <width>640</width>
+      <height>360</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -76,25 +63,57 @@
    <widget class="QPushButton" name="select_window_button">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>93</y>
-      <width>107</width>
-      <height>24</height>
+      <x>648</x>
+      <y>4</y>
+      <width>144</width>
+      <height>36</height>
      </rect>
     </property>
     <property name="focusPolicy">
      <enum>Qt::NoFocus</enum>
     </property>
     <property name="text">
-     <string>Select Window</string>
+     <string>Select Window...</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="select_region_button">
+    <property name="geometry">
+     <rect>
+      <x>648</x>
+      <y>44</y>
+      <width>144</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Select Screen Region...</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="select_device_button">
+    <property name="geometry">
+     <rect>
+      <x>648</x>
+      <y>84</y>
+      <width>144</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Select Device...</string>
     </property>
    </widget>
    <widget class="QLabel" name="capture_region_window_label">
     <property name="geometry">
      <rect>
-      <x>127</x>
-      <y>49</y>
-      <width>318</width>
+      <x>4</x>
+      <y>368</y>
+      <width>640</width>
       <height>20</height>
      </rect>
     </property>

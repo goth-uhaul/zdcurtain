@@ -19,6 +19,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "ruff>=0.12.5",
     "types-pywin32>=311.0.0.20250723",
     "winrt-windows-graphics>=3.2.1",
     "winrt-windows-graphics-capture>=3.2.1",
