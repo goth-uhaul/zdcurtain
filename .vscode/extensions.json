@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: MIT
+// Copyright 2024 Beslogic Inc.
+//
+// The source skeleton for this configuration can be found at
+// https://github.com/BesLogic/shared-configs/blob/main/.vscode/extensions.json
+// Modifications to this file that are not project-specific should also be done upstream.
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=827846 to learn about workspace recommendations.
+  // List of extensions which should be recommended for users of this workspace.
+  // Only keep those used by your specific project
+  "recommendations": [
+    // General
+    "dprint.dprint",
+    "eamodio.gitlens",
+    "editorconfig.editorconfig",
+    "pkief.material-icon-theme",
+    // GitHub
+    "bierner.github-markdown-preview",
+    "github.vscode-github-actions",
+    // Python/TOML
+    "charliermarsh.ruff",
+    "ms-python.mypy-type-checker",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "tamasfe.even-better-toml",
+    // Markdown
+    "bierner.github-markdown-preview",
+    "davidanson.vscode-markdownlint",
+    // Powershell
+    "ms-vscode.powershell",
+    // XML / Qt
+    "redhat.vscode-xml",
+    // YAML
+    "redhat.vscode-yaml"
+  ],
+  "unwantedRecommendations": [
+    // Must disable in this workspace //
+    // https://github.com/microsoft/vscode/issues/40239 //
+    //
+    // even-better-toml has format on save
+    "bungcip.better-toml",
+    // VSCode has implemented an optimized version
+    "coenraads.bracket-pair-colorizer",
+    "coenraads.bracket-pair-colorizer-2",
+    "shardulm94.trailing-spaces",
+    // Obsoleted by Pylance
+    "ms-pyright.pyright",
+    // Not configurable per workspace, tends to conflict with other linters
+    "sonarsource.sonarlint-vscode",
+    //
+    // Don't recommend to autoinstall //
+    //
+    // Use Ruff instead
+    "ms-python.autopep8",
+    "ms-python.black-formatter",
+    "ms-python.flake8",
+    "ms-python.isort",
+    "ms-python.pylint",
+    // This is a Git project
+    "johnstoncode.svn-scm",
+    // Prefer using VSCode itself as a text editor
+    "vscodevim.vim"
+  ]
+}

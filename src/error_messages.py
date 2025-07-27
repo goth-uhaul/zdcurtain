@@ -77,7 +77,7 @@ def exception_traceback(exception: BaseException, message: str = ""):
     set_text_message(
         message,
         "\n".join(traceback.format_exception(None, exception, exception.__traceback__)),
-        "Close AutoSplit",
+        "Close",
     )
 
 

@@ -60,6 +60,34 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
+   <widget class="QLabel" name="cropped_live_image">
+    <property name="geometry">
+     <rect>
+      <x>800</x>
+      <y>4</y>
+      <width>640</width>
+      <height>120</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Box</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Plain</enum>
+    </property>
+    <property name="lineWidth">
+     <number>1</number>
+    </property>
+    <property name="midLineWidth">
+     <number>0</number>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
    <widget class="QPushButton" name="select_window_button">
     <property name="geometry">
      <rect>
@@ -122,6 +150,86 @@
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="image_black_label">
+    <property name="geometry">
+     <rect>
+      <x>820</x>
+      <y>160</y>
+      <width>500</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Black</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeft</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="similarity_to_elevator_label">
+    <property name="geometry">
+     <rect>
+      <x>820</x>
+      <y>190</y>
+      <width>500</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Similarity to elevator loading image:</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeft</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="similarity_to_tram_label">
+    <property name="geometry">
+     <rect>
+      <x>820</x>
+      <y>220</y>
+      <width>500</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Similarity to tram loading image:</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeft</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="similarity_to_teleportal_label">
+    <property name="geometry">
+     <rect>
+      <x>820</x>
+      <y>250</y>
+      <width>500</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Similarity to teleportal loading image:</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeft</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="similarity_to_egg_label">
+    <property name="geometry">
+     <rect>
+      <x>820</x>
+      <y>280</y>
+      <width>500</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Similarity to Itorash elevator image:</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeft</set>
     </property>
    </widget>
   </widget>

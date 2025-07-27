@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "numpy>=2.3.2",
-    "opencv-contrib-python-headless>=4.11.0.86",
+    "opencv-contrib-python-headless==4.11.0.86",
     "pygrabber>=0.2",
     "pyinstaller>=6.14.2",
     "pyside6-essentials>=6.9.1",

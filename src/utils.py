@@ -40,6 +40,13 @@ class ImageShape(IntEnum):
     Channels = 2
 
 
+class ColorChannel(IntEnum):
+    Blue = 0
+    Green = 1
+    Red = 2
+    Alpha = 3
+
+
 def resource_path(relative_path: "StrPath"):
     """
     Get absolute path to resource, from the root of the repository.

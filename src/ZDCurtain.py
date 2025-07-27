@@ -10,8 +10,7 @@ import sys
 if sys.platform == "win32":
     import ctypes
 
-    def do_nothing(*_):
-        ...
+    def do_nothing(*_): ...
 
     # pyautogui._pyautogui_win.py
     ctypes.windll.user32.SetProcessDPIAware = do_nothing  # pyright: ignore[reportAttributeAccessIssue]
@@ -33,13 +32,16 @@ from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
 
 import error_messages
 from capture_method import CaptureMethodBase, CaptureMethodEnum, change_capture_method
+from frame_analysis import compare_phash, get_top_third_of_capture, is_black
 from region_selection import select_window
 from user_profile import DEFAULT_PROFILE
 from utils import (
+    BGR_CHANNEL_COUNT,
     BGRA_CHANNEL_COUNT,
     FROZEN,
     ONE_SECOND,
     ZDCURTAIN_VERSION,
+    ImageShape,
     is_valid_image,
     list_processes,
 )
@@ -51,8 +53,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
     # Timers
     timer_live_image = QtCore.QTimer()
     timer_live_image.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
-    timer_start_image = QtCore.QTimer()
-    timer_start_image.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
+    timer_frame_analysis = QtCore.QTimer()
+    timer_frame_analysis.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
 
     def __init__(self):
         super().__init__()
@@ -62,6 +64,39 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.capture_method = CaptureMethodBase(self)
         self.is_running = False
 
+        self.is_frame_black = False
+        self.grayscale_threshold = 1.0
+        self.similarity_to_tram = 0.0
+        self.similarity_to_tram_max = 0.0
+        self.similarity_to_teleportal = 0.0
+        self.similarity_to_teleportal_max = 0.0
+        self.similarity_to_elevator = 0.0
+        self.similarity_to_elevator_max = 0.0
+        self.similarity_to_egg = 0.0
+        self.similarity_to_egg_max = 0.0
+
+        # comparison images
+        self.comparison_capsule_gravity = None
+        self.comparison_capsule_power = None
+        self.comparison_capsule_varia = None
+        self.comparison_elevator_down_gravity = None
+        self.comparison_elevator_down_power = None
+        self.comparison_elevator_down_varia = None
+        self.comparison_elevator_up_gravity = None
+        self.comparison_elevator_up_power = None
+        self.comparison_elevator_up_varia = None
+        self.comparison_teleport_gravity = None
+        self.comparison_teleport_power = None
+        self.comparison_teleport_varia = None
+        self.comparison_train_left_gravity = None
+        self.comparison_train_left_power = None
+        self.comparison_train_left_varia = None
+        self.comparison_train_right_gravity = None
+        self.comparison_train_right_power = None
+        self.comparison_train_right_varia = None
+
+        load_comparison_images(self)
+
         # Setup global error handling
         def _show_error_signal_slot(error_message_box: Callable[..., object]):
             return error_message_box()
@@ -70,9 +105,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         sys.excepthook = error_messages.make_excepthook(self)
 
         self.setupUi(self)
-        self.setWindowTitle(
-            f"ZDCurtain v.{ZDCURTAIN_VERSION}"
-        )
+        self.setWindowTitle(f"ZDCurtain v.{ZDCURTAIN_VERSION}")
 
         self.settings_dict = deepcopy(DEFAULT_PROFILE)
 
@@ -89,40 +122,28 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         self.show()
 
-    def __get_capture_for_comparison(self):
-        """Grab capture region and resize for comparison."""
-        capture = self.capture_method.get_frame()
-
-        # This most likely means we lost capture
-        # (ie the captured window was closed, crashed, lost capture device, etc.)
-        if not is_valid_image(capture):
-            # Try to recover by using the window name
-            if self.settings_dict["capture_method"] == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE:
-                self.live_image.setText("Waiting for capture device...")
-            else:
-                message = "Trying to recover window..."
-                if self.settings_dict["capture_method"] == CaptureMethodEnum.BITBLT:
-                    message += "\n(captured window may be incompatible with BitBlt)"
-                self.live_image.setText(message)
-                recovered = self.capture_method.recover_window(
-                    self.settings_dict["captured_window_title"]
-                )
-                if recovered:
-                    capture = self.capture_method.get_frame()
-
-        self.__update_live_image_details(capture)
-        return capture
-
     def __update_live_image_details(
         self,
         capture: MatLike | None,
         *,
         called_from_timer: bool = False,
     ):
+        cropped_capture = None
+
         if called_from_timer:
             if self.is_running:
                 return
             capture = self.capture_method.get_frame()
+
+            if not is_valid_image(capture):
+                return
+
+            dim = (640, 360)
+
+            resized_capture = cv2.resize(capture, dim)
+            cropped_capture = get_top_third_of_capture(resized_capture)
+
+            perform_image_analysis(self, cropped_capture)
 
         # Update title from target window or Capture Device name
         capture_region_window_label = (
@@ -132,15 +153,35 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         )
         self.capture_region_window_label.setText(capture_region_window_label)
 
-        # Simply clear if "live capture region" setting is off
-        if not (self.settings_dict["live_capture_region"] and capture_region_window_label):
-            self.live_image.clear()
-        # Set live image in UI
-        else:
+        self.image_black_label.setText(
+            f"Black screen detection: {self.is_frame_black},"
+            + f"current threshold {self.grayscale_threshold}"
+        )
+
+        self.similarity_to_elevator_label.setText(
+            f"Similarity to elevator loading image: ({self.similarity_to_elevator}, max {self.similarity_to_elevator_max})"
+        )
+
+        self.similarity_to_tram_label.setText(
+            f"Similarity to tram loading image: ({self.similarity_to_tram}, max {self.similarity_to_tram_max})"
+        )
+
+        self.similarity_to_teleportal_label.setText(
+            f"Similarity to teleportal loading image: ({self.similarity_to_teleportal}, max {self.similarity_to_teleportal_max})"
+        )
+
+        self.similarity_to_egg_label.setText(
+            f"Similarity to Itorash elevator image: ({self.similarity_to_egg}, max {self.similarity_to_egg_max})"
+        )
+
+        if self.settings_dict["live_capture_region"]:
             set_preview_image(self.live_image, capture)
 
+        if self.settings_dict["cropped_capture_region"]:
+            set_preview_image(self.cropped_live_image, cropped_capture)
+
     @override
-    def closeEvent(self, event: QtGui.QCloseEvent | None = None):  # noqa: N802
+    def closeEvent(self, event: QtGui.QCloseEvent | None = None):
         """Exit safely when closing the window."""
 
         def exit_program() -> NoReturn:
@@ -148,6 +189,88 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
             if event is not None:
                 event.accept()
             sys.exit()
+
+
+def perform_image_analysis(self, capture: MatLike | None):
+    if not is_valid_image(capture):
+        return
+
+    self.is_frame_black, self.grayscale_threshold = is_black(capture)
+    self.similarity_to_elevator = compare_phash(capture, self.comparison_elevator_up_gravity)
+    self.similarity_to_tram = compare_phash(capture, self.comparison_train_left_power)
+    self.similarity_to_teleportal = compare_phash(capture, self.comparison_teleport_gravity)
+    self.similarity_to_egg = compare_phash(capture, self.comparison_capsule_gravity)
+
+    self.similarity_to_elevator_max = max(
+        self.similarity_to_elevator_max, self.similarity_to_elevator
+    )
+    self.similarity_to_tram_max = max(self.similarity_to_tram_max, self.similarity_to_tram)
+    self.similarity_to_teleportal_max = max(
+        self.similarity_to_teleportal_max, self.similarity_to_teleportal
+    )
+    self.similarity_to_egg_max = max(self.similarity_to_egg_max, self.similarity_to_egg)
+
+
+def load_comparison_images(self):
+    self.comparison_capsule_gravity = read_and_format_image(
+        "res/comparison/capsule_gravity_first.png"
+    )
+    self.comparison_capsule_power = read_and_format_image("res/comparison/capsule_power_first.png")
+    self.comparison_capsule_varia = read_and_format_image("res/comparison/capsule_varia_first.png")
+    self.comparison_elevator_down_gravity = read_and_format_image(
+        "res/comparison/elevator_down_gravity_first.png"
+    )
+    self.comparison_elevator_down_power = read_and_format_image(
+        "res/comparison/elevator_down_power_first.png"
+    )
+    self.comparison_elevator_down_varia = read_and_format_image(
+        "res/comparison/elevator_down_varia_first.png"
+    )
+    self.comparison_elevator_up_gravity = read_and_format_image(
+        "res/comparison/elevator_up_gravity_first.png"
+    )
+    self.comparison_elevator_up_power = read_and_format_image(
+        "res/comparison/elevator_up_power_first.png"
+    )
+    self.comparison_elevator_up_varia = read_and_format_image(
+        "res/comparison/elevator_up_varia_first.png"
+    )
+    self.comparison_teleport_gravity = read_and_format_image(
+        "res/comparison/teleport_gravity_first.png"
+    )
+    self.comparison_teleport_power = read_and_format_image(
+        "res/comparison/teleport_power_first.png"
+    )
+    self.comparison_teleport_varia = read_and_format_image(
+        "res/comparison/teleport_varia_first.png"
+    )
+    self.comparison_train_left_gravity = read_and_format_image(
+        "res/comparison/train_left_gravity_first.png"
+    )
+    self.comparison_train_left_power = read_and_format_image(
+        "res/comparison/train_left_power_first.png"
+    )
+    self.comparison_train_left_varia = read_and_format_image(
+        "res/comparison/train_left_varia_first.png"
+    )
+    self.comparison_train_right_gravity = read_and_format_image(
+        "res/comparison/train_right_gravity_first.png"
+    )
+    self.comparison_train_right_power = read_and_format_image(
+        "res/comparison/train_right_power_first.png"
+    )
+    self.comparison_train_right_varia = read_and_format_image(
+        "res/comparison/train_right_varia_first.png"
+    )
+
+
+def read_and_format_image(filename):
+    image_data = cv2.imread(filename)
+
+    if image_data.shape[ImageShape.Channels] == BGR_CHANNEL_COUNT:
+        image_data = cv2.cvtColor(image_data, cv2.COLOR_BGR2BGRA)
+
+    return image_data
 
 
 def set_preview_image(qlabel: QLabel, image: MatLike | None):

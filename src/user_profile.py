@@ -7,6 +7,7 @@ from capture_method import CAPTURE_METHODS, CaptureMethodEnum, Region
 class UserProfileDict(TypedDict):
     fps_limit: int
     live_capture_region: bool
+    cropped_capture_region: bool
     capture_method: str | CaptureMethodEnum
     capture_device_id: int
     capture_device_name: str
@@ -21,7 +22,8 @@ class UserProfileDict(TypedDict):
 
 DEFAULT_PROFILE = UserProfileDict(
     fps_limit=60,
-    live_capture_region=True,
+    live_capture_region=False,
+    cropped_capture_region=True,
     capture_method=CAPTURE_METHODS.get_method_by_index(2),
     capture_device_id=0,
     capture_device_name="",
