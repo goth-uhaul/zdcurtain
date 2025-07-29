@@ -126,6 +126,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         # connecting menu actions
         self.action_settings.triggered.connect(lambda: open_settings(self))
+        self.action_exit.triggered.connect(lambda: self.closeEvent())  # noqa: PLW0108
 
         # connecting button clicks to functions
         self.select_window_button.clicked.connect(lambda: select_window(self))
@@ -225,6 +226,11 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
             if event is not None:
                 event.accept()
             sys.exit()
+
+        exit_program()
+
+        # Fallthrough case: Prevent program from closing.
+        event.ignore()
 
 
 def perform_black_level_analysis(self, capture: MatLike | None):

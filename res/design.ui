@@ -77,6 +77,9 @@
     </property>
    </widget>
    <widget class="QPushButton" name="select_region_button">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>660</x>
@@ -841,7 +844,7 @@
      <string>File</string>
     </property>
     <addaction name="action_settings"/>
-    <addaction name="actionExit"/>
+    <addaction name="action_exit"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -850,7 +853,7 @@
     <string>Settings</string>
    </property>
   </action>
-  <action name="actionExit">
+  <action name="action_exit">
    <property name="text">
     <string>Exit</string>
    </property>

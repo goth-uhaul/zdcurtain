@@ -170,7 +170,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Default Black Screen Threshold</string>
+     <string>Black Screen Threshold</string>
     </property>
    </widget>
    <widget class="QGroupBox" name="similarity_settings_groupbox">
