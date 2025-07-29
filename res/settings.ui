@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <author>Toufool</author>
+ <class>SettingsWidget</class>
+ <widget class="QWidget" name="SettingsWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>664</width>
+    <height>456</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <pointsize>9</pointsize>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Settings</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>:/resources/icon.ico</normaloff>:/resources/icon.ico</iconset>
+  </property>
+  <widget class="QGroupBox" name="capture_settings_groupbox">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>5</y>
+     <width>291</width>
+     <height>201</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Capture Settings</string>
+   </property>
+   <widget class="QLabel" name="fps_limit_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>33</y>
+      <width>141</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>This value will limit the amount of frames per second that AutoSplit will run comparisons</string>
+    </property>
+    <property name="text">
+     <string>FPS Limit:</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="fps_limit_spinbox">
+    <property name="geometry">
+     <rect>
+      <x>203</x>
+      <y>30</y>
+      <width>68</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="correctionMode">
+     <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+    </property>
+    <property name="suffix">
+     <string> FPS</string>
+    </property>
+    <property name="minimum">
+     <number>20</number>
+    </property>
+    <property name="maximum">
+     <number>240</number>
+    </property>
+    <property name="value">
+     <number>60</number>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="live_capture_region_checkbox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>60</y>
+      <width>261</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Show Capture Region Preview?</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+    <property name="tristate">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="capture_method_combobox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>110</y>
+      <width>261</width>
+      <height>22</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="capture_method_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>90</y>
+      <width>261</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Capture method:</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="capture_device_combobox">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>160</y>
+      <width>261</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="placeholderText">
+     <string>Scanning for existing devices...</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="capture_device_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>140</y>
+      <width>261</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Capture device:</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="analysis_settings_groupbox">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>210</y>
+     <width>291</width>
+     <height>231</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Image Analysis Settings</string>
+   </property>
+   <widget class="QLabel" name="black_threshold_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>34</y>
+      <width>184</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Default Black Screen Threshold</string>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="similarity_settings_groupbox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>60</y>
+      <width>271</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Similarity Thresholds</string>
+    </property>
+    <widget class="QLabel" name="elevator_similarity_label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>35</y>
+       <width>68</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Elevators</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="tram_similarity_label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>65</y>
+       <width>95</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Trams / Trains</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="teleportal_similarity_label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>95</y>
+       <width>78</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Teleportals</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="egg_similarity_label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>125</y>
+       <width>102</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Itorash Capsule</string>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="egg_similarity_spinbox">
+     <property name="geometry">
+      <rect>
+       <x>207</x>
+       <y>120</y>
+       <width>55</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="suffix">
+      <string>%</string>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+     <property name="value">
+      <number>90</number>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="tram_similarity_spinbox">
+     <property name="geometry">
+      <rect>
+       <x>207</x>
+       <y>60</y>
+       <width>55</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="suffix">
+      <string>%</string>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+     <property name="value">
+      <number>90</number>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="elevator_similarity_spinbox">
+     <property name="geometry">
+      <rect>
+       <x>207</x>
+       <y>30</y>
+       <width>55</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="suffix">
+      <string>%</string>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+     <property name="value">
+      <number>90</number>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="teleportal_similarity_spinbox">
+     <property name="geometry">
+      <rect>
+       <x>207</x>
+       <y>90</y>
+       <width>55</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="suffix">
+      <string>%</string>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+     <property name="value">
+      <number>90</number>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QSpinBox" name="black_threshold_spinbox">
+    <property name="geometry">
+     <rect>
+      <x>218</x>
+      <y>30</y>
+      <width>55</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="suffix">
+     <string>%</string>
+    </property>
+    <property name="minimum">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <number>100</number>
+    </property>
+    <property name="value">
+     <number>1</number>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="hotkey_settings_groupbox">
+   <property name="geometry">
+    <rect>
+     <x>310</x>
+     <y>5</y>
+     <width>341</width>
+     <height>71</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Hotkeys</string>
+   </property>
+   <widget class="QPushButton" name="set_pause_hotkey_button">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>29</y>
+      <width>81</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Set Hotkey</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="pause_input">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>30</y>
+      <width>91</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="pause_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>33</y>
+      <width>121</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Pause / Resume Timer:</string>
+    </property>
+   </widget>
+  </widget>
+ </widget>
+ <tabstops>
+  <tabstop>set_pause_hotkey_button</tabstop>
+  <tabstop>capture_method_combobox</tabstop>
+  <tabstop>capture_device_combobox</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

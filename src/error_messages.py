@@ -67,6 +67,10 @@ def region():
     )
 
 
+def invalid_hotkey(hotkey_name: str):
+    set_text_message(f"Invalid hotkey {hotkey_name!r}")
+
+
 def exception_traceback(exception: BaseException, message: str = ""):
     if not message:
         message = (

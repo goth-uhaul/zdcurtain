@@ -15,7 +15,7 @@ def is_black(capture: MatLike | None):
     gray = cv2.cvtColor(capture, cv2.COLOR_BGR2GRAY)
     average = np.average(gray)
 
-    return average < 3, average
+    return average < BLACK_THRESHOLD, average
 
 
 def crop_image(capture: MatLike | None, x1, y1, x2, y2):
@@ -42,6 +42,7 @@ RANGES = (0, MAXRANGE, 0, MAXRANGE, 0, MAXRANGE)
 MASK_SIZE_MULTIPLIER = ColorChannel.Alpha * MAXBYTE * MAXBYTE
 MAX_VALUE = 1.0
 CV2_PHASH_SIZE = 8
+BLACK_THRESHOLD = 1
 
 
 def compare_histograms(source: MatLike, capture: MatLike, mask: MatLike | None = None):
@@ -119,3 +120,19 @@ def compare_phash(source: MatLike, capture: MatLike, mask: MatLike | None = None
         capture = cv2.bitwise_and(capture, capture, mask=mask)
 
     return __cv2_phash(source, capture)
+
+
+def __compare_dummy(*_: object):
+    return 0.0
+
+
+def get_comparison_method_by_name(comparison_method_name: str):
+    match comparison_method_name:
+        case "l2norm":
+            return compare_l2_norm
+        case "histogram":
+            return compare_histograms
+        case "phash":
+            return compare_phash
+        case _:
+            return __compare_dummy

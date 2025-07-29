@@ -1,11 +1,14 @@
+import asyncio
 import os
 import subprocess
 import sys
 import tomllib
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
+from functools import partial
 from pathlib import Path
 from platform import version
-from typing import TYPE_CHECKING, TypeGuard, TypeVar
+from threading import Thread
+from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar
 
 from cv2.typing import MatLike
 from gen.build_vars import ZDCURTAIN_BUILD_NUMBER, ZDCURTAIN_GITHUB_REPOSITORY
@@ -101,6 +104,21 @@ def get_window_bounds(hwnd: int) -> tuple[int, int, int, int]:
     return window_left_bounds, window_top_bounds, window_width, window_height
 
 
+def decimal(value: float):
+    # Using ljust instead of :2f because of python float rounding errors
+    return f"{int(value * 100) / 100}".ljust(4, "0")
+
+
+def is_digit(value: str | int | None):
+    """Checks if `value` is a single-digit string from 0-9."""
+    if value is None:
+        return False
+    try:
+        return 0 <= int(value) <= 9
+    except (ValueError, TypeError):
+        return False
+
+
 def is_valid_image(image: MatLike | None) -> TypeGuard[MatLike]:
     return image is not None and bool(image.size)
 
@@ -129,6 +147,42 @@ def try_delete_dc(dc: "PyCDC"):
         dc.DeleteDC()
     except win32ui.error:
         pass
+
+
+def get_or_create_eventloop():
+    try:
+        return asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return asyncio.get_event_loop()
+
+
+def try_input_device_access():
+    """Same as `make_uinput` in `keyboard/_nixcommon.py`."""
+    if sys.platform != "linux":
+        return
+
+
+def fire_and_forget(func: Callable[..., Any]):
+    """
+    Runs synchronous function asynchronously without waiting for a response.
+
+    Uses threads on Windows because
+    ~~`RuntimeError: There is no current event loop in thread 'MainThread'`~~
+    maybe asyncio has issues. Unsure. See alpha.5 and https://github.com/Avasam/AutoSplit/issues/36
+
+    Uses asyncio on Linux because of a `Segmentation fault (core dumped)`
+    """
+
+    def wrapped(*args: Any, **kwargs: Any):
+        if sys.platform == "win32":
+            thread = Thread(target=func, args=args, kwargs=kwargs)
+            thread.start()
+            return thread
+        return get_or_create_eventloop().run_in_executor(None, partial(func, *args, **kwargs))
+
+    return wrapped
 
 
 def list_processes():

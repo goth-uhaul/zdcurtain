@@ -7,20 +7,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1400</width>
-    <height>800</height>
+    <width>816</width>
+    <height>632</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>1500</width>
-    <height>800</height>
+    <width>816</width>
+    <height>632</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1500</width>
-    <height>800</height>
+    <width>816</width>
+    <height>632</height>
    </size>
   </property>
   <property name="font">
@@ -35,17 +35,17 @@
    <widget class="QLabel" name="live_image">
     <property name="geometry">
      <rect>
-      <x>4</x>
-      <y>4</y>
+      <x>10</x>
+      <y>10</y>
       <width>640</width>
       <height>360</height>
      </rect>
     </property>
     <property name="frameShape">
-     <enum>QFrame::Box</enum>
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="frameShadow">
-     <enum>QFrame::Plain</enum>
+     <enum>QFrame::Shadow::Plain</enum>
     </property>
     <property name="lineWidth">
      <number>1</number>
@@ -57,48 +57,20 @@
      <string/>
     </property>
     <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-   </widget>
-   <widget class="QLabel" name="cropped_live_image">
-    <property name="geometry">
-     <rect>
-      <x>800</x>
-      <y>4</y>
-      <width>640</width>
-      <height>120</height>
-     </rect>
-    </property>
-    <property name="frameShape">
-     <enum>QFrame::Box</enum>
-    </property>
-    <property name="frameShadow">
-     <enum>QFrame::Plain</enum>
-    </property>
-    <property name="lineWidth">
-     <number>1</number>
-    </property>
-    <property name="midLineWidth">
-     <number>0</number>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
+     <set>Qt::AlignmentFlag::AlignCenter</set>
     </property>
    </widget>
    <widget class="QPushButton" name="select_window_button">
     <property name="geometry">
      <rect>
-      <x>648</x>
-      <y>4</y>
+      <x>660</x>
+      <y>10</y>
       <width>144</width>
       <height>36</height>
      </rect>
     </property>
     <property name="focusPolicy">
-     <enum>Qt::NoFocus</enum>
+     <enum>Qt::FocusPolicy::NoFocus</enum>
     </property>
     <property name="text">
      <string>Select Window...</string>
@@ -107,14 +79,14 @@
    <widget class="QPushButton" name="select_region_button">
     <property name="geometry">
      <rect>
-      <x>648</x>
-      <y>44</y>
+      <x>660</x>
+      <y>50</y>
       <width>144</width>
       <height>36</height>
      </rect>
     </property>
     <property name="focusPolicy">
-     <enum>Qt::NoFocus</enum>
+     <enum>Qt::FocusPolicy::NoFocus</enum>
     </property>
     <property name="text">
      <string>Select Screen Region...</string>
@@ -123,14 +95,14 @@
    <widget class="QPushButton" name="select_device_button">
     <property name="geometry">
      <rect>
-      <x>648</x>
-      <y>84</y>
+      <x>660</x>
+      <y>90</y>
       <width>144</width>
       <height>36</height>
      </rect>
     </property>
     <property name="focusPolicy">
-     <enum>Qt::NoFocus</enum>
+     <enum>Qt::FocusPolicy::NoFocus</enum>
     </property>
     <property name="text">
      <string>Select Device...</string>
@@ -139,8 +111,8 @@
    <widget class="QLabel" name="capture_region_window_label">
     <property name="geometry">
      <rect>
-      <x>4</x>
-      <y>368</y>
+      <x>10</x>
+      <y>370</y>
       <width>640</width>
       <height>20</height>
      </rect>
@@ -149,90 +121,741 @@
      <string>-</string>
     </property>
     <property name="alignment">
-     <set>Qt::AlignCenter</set>
+     <set>Qt::AlignmentFlag::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QLabel" name="image_black_label">
+   <widget class="QGroupBox" name="statistics_groupbox">
     <property name="geometry">
      <rect>
-      <x>820</x>
-      <y>160</y>
-      <width>500</width>
+      <x>10</x>
+      <y>400</y>
+      <width>641</width>
+      <height>201</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Statistics</string>
+    </property>
+    <widget class="QLabel" name="image_black_label">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>52</y>
+       <width>411</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Black</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignLeading</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="similarity_to_elevator_label">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>81</y>
+       <width>411</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Similarity to elevator loading image:</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignLeading</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="similarity_to_tram_label">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>112</y>
+       <width>411</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Similarity to tram loading image:</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignLeading</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="similarity_to_teleportal_label">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>142</y>
+       <width>411</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Similarity to teleportal loading image:</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignLeading</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="similarity_to_egg_label">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>172</y>
+       <width>411</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Similarity to Itorash elevator image:</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignLeading</set>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="reset_statistics_button">
+     <property name="geometry">
+      <rect>
+       <x>493</x>
+       <y>24</y>
+       <width>144</width>
+       <height>36</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Reset statistics</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="black_indicator_label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>50</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="palette">
+      <palette>
+       <active>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </active>
+       <inactive>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </inactive>
+       <disabled>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </disabled>
+      </palette>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="elevator_indicator_label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>80</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="palette">
+      <palette>
+       <active>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </active>
+       <inactive>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </inactive>
+       <disabled>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </disabled>
+      </palette>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="tram_indicator_label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>110</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="palette">
+      <palette>
+       <active>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </active>
+       <inactive>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </inactive>
+       <disabled>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </disabled>
+      </palette>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="teleportal_indicator_label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>140</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="palette">
+      <palette>
+       <active>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </active>
+       <inactive>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </inactive>
+       <disabled>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </disabled>
+      </palette>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="egg_indicator_label">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>170</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="palette">
+      <palette>
+       <active>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </active>
+       <inactive>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </inactive>
+       <disabled>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </disabled>
+      </palette>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="elevator_indicator_ever_label">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>80</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="palette">
+      <palette>
+       <active>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </active>
+       <inactive>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </inactive>
+       <disabled>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </disabled>
+      </palette>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label">
+     <property name="geometry">
+      <rect>
+       <x>6</x>
+       <y>27</y>
+       <width>25</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Now</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>27</y>
+       <width>22</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Ever</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="tram_indicator_ever_label">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>110</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="palette">
+      <palette>
+       <active>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </active>
+       <inactive>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </inactive>
+       <disabled>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </disabled>
+      </palette>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="teleportal_indicator_ever_label">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>140</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="palette">
+      <palette>
+       <active>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </active>
+       <inactive>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </inactive>
+       <disabled>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </disabled>
+      </palette>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="egg_indicator_ever_label">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>170</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="palette">
+      <palette>
+       <active>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </active>
+       <inactive>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </inactive>
+       <disabled>
+        <colorrole role="Window">
+         <brush brushstyle="SolidPattern">
+          <color alpha="255">
+           <red>0</red>
+           <green>0</green>
+           <blue>0</blue>
+          </color>
+         </brush>
+        </colorrole>
+       </disabled>
+      </palette>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QPushButton" name="begin_tracking_button">
+    <property name="geometry">
+     <rect>
+      <x>660</x>
+      <y>131</y>
+      <width>144</width>
+      <height>36</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Begin Tracking</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="analysis_fps_label">
+    <property name="geometry">
+     <rect>
+      <x>527</x>
+      <y>349</y>
+      <width>121</width>
       <height>20</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Black</string>
+    <property name="palette">
+     <palette>
+      <active>
+       <colorrole role="WindowText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Window">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+      </active>
+      <inactive>
+       <colorrole role="WindowText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Window">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+      </inactive>
+      <disabled>
+       <colorrole role="Window">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+      </disabled>
+     </palette>
     </property>
-    <property name="alignment">
-     <set>Qt::AlignLeft</set>
-    </property>
-   </widget>
-   <widget class="QLabel" name="similarity_to_elevator_label">
-    <property name="geometry">
-     <rect>
-      <x>820</x>
-      <y>190</y>
-      <width>500</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Similarity to elevator loading image:</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignLeft</set>
-    </property>
-   </widget>
-   <widget class="QLabel" name="similarity_to_tram_label">
-    <property name="geometry">
-     <rect>
-      <x>820</x>
-      <y>220</y>
-      <width>500</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Similarity to tram loading image:</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignLeft</set>
-    </property>
-   </widget>
-   <widget class="QLabel" name="similarity_to_teleportal_label">
-    <property name="geometry">
-     <rect>
-      <x>820</x>
-      <y>250</y>
-      <width>500</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Similarity to teleportal loading image:</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignLeft</set>
-    </property>
-   </widget>
-   <widget class="QLabel" name="similarity_to_egg_label">
-    <property name="geometry">
-     <rect>
-      <x>820</x>
-      <y>280</y>
-      <width>500</width>
-      <height>20</height>
-     </rect>
+    <property name="autoFillBackground">
+     <bool>true</bool>
     </property>
     <property name="text">
-     <string>Similarity to Itorash elevator image:</string>
+     <string>Analysis FPS: 9999</string>
     </property>
     <property name="alignment">
-     <set>Qt::AlignLeft</set>
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
    </widget>
   </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>816</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="action_settings"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <addaction name="menuFile"/>
+  </widget>
+  <action name="action_settings">
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
  </widget>
+ <resources/>
  <connections/>
 </ui>

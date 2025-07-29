@@ -5,8 +5,10 @@ description = "Load remover and autosplitter for Metroid Dread"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "keyboard>=0.13.5",
     "numpy>=2.3.2",
     "opencv-contrib-python-headless==4.11.0.86",
+    "pyautogui>=0.9.54",
     "pygrabber>=0.2",
     "pyinstaller>=6.14.2",
     "pyside6-essentials>=6.9.1",

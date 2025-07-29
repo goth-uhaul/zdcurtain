@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import sys
+from time import perf_counter_ns
 
 # Prevent PyAutoGUI and pywinctl from setting Process DPI Awareness,
 # which Qt tries to do then throws warnings about it.
@@ -26,14 +27,15 @@ from typing import NoReturn, override
 
 import cv2
 from cv2.typing import MatLike
-from gen import design
+from gen import design, settings
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
 
 import error_messages
 from capture_method import CaptureMethodBase, CaptureMethodEnum, change_capture_method
-from frame_analysis import compare_phash, get_top_third_of_capture, is_black
+from frame_analysis import get_comparison_method_by_name, get_top_third_of_capture, is_black
 from region_selection import select_window
+from settings import open_settings
 from user_profile import DEFAULT_PROFILE
 from utils import (
     BGR_CHANNEL_COUNT,
@@ -48,6 +50,9 @@ from utils import (
 
 
 class ZDCurtain(QMainWindow, design.Ui_MainWindow):
+    # Signals
+    after_setting_hotkey_signal = QtCore.Signal()
+    # Use this signal when trying to show an error from outside the main thread
     show_error_signal = QtCore.Signal(FunctionType)
 
     # Timers
@@ -56,6 +61,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
     timer_frame_analysis = QtCore.QTimer()
     timer_frame_analysis.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
 
+    SettingsWidget: settings.Ui_SettingsWidget | None = None
+
     def __init__(self):
         super().__init__()
 
@@ -63,9 +70,11 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.last_saved_settings = deepcopy(DEFAULT_PROFILE)
         self.capture_method = CaptureMethodBase(self)
         self.is_running = False
+        self.last_frame_time = 1
 
+        # Heuristics
+        self.black_level = 1.0
         self.is_frame_black = False
-        self.grayscale_threshold = 1.0
         self.similarity_to_tram = 0.0
         self.similarity_to_tram_max = 0.0
         self.similarity_to_teleportal = 0.0
@@ -74,6 +83,10 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.similarity_to_elevator_max = 0.0
         self.similarity_to_egg = 0.0
         self.similarity_to_egg_max = 0.0
+        self.ever_crossed_threshold_tram = False
+        self.ever_crossed_threshold_elevator = False
+        self.ever_crossed_threshold_teleportal = False
+        self.ever_crossed_threshold_egg = False
 
         # comparison images
         self.comparison_capsule_gravity = None
@@ -111,8 +124,12 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         change_capture_method(CaptureMethodEnum.WINDOWS_GRAPHICS_CAPTURE, self)
 
+        # connecting menu actions
+        self.action_settings.triggered.connect(lambda: open_settings(self))
+
         # connecting button clicks to functions
         self.select_window_button.clicked.connect(lambda: select_window(self))
+        self.reset_statistics_button.clicked.connect(lambda: reset_statistics(self))
 
         # live image preview
         self.timer_live_image.timeout.connect(
@@ -143,7 +160,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
             resized_capture = cv2.resize(capture, dim)
             cropped_capture = get_top_third_of_capture(resized_capture)
 
-            perform_image_analysis(self, cropped_capture)
+            perform_black_level_analysis(self, cropped_capture)
+            perform_similarity_analysis(self, resized_capture)
 
         # Update title from target window or Capture Device name
         capture_region_window_label = (
@@ -154,31 +172,49 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.capture_region_window_label.setText(capture_region_window_label)
 
         self.image_black_label.setText(
-            f"Black screen detection: {self.is_frame_black},"
-            + f"current threshold {self.grayscale_threshold}"
+            f"Is screen black: {self.is_frame_black},"
+            + f"current black level {self.black_level:.4f}%"
         )
 
         self.similarity_to_elevator_label.setText(
-            f"Similarity to elevator loading image: ({self.similarity_to_elevator}, max {self.similarity_to_elevator_max})"
+            f"Similarity to elevator loading image: ({self.similarity_to_elevator:.4f}%, max {self.similarity_to_elevator_max:.4f}%)"
         )
 
         self.similarity_to_tram_label.setText(
-            f"Similarity to tram loading image: ({self.similarity_to_tram}, max {self.similarity_to_tram_max})"
+            f"Similarity to tram loading image: ({self.similarity_to_tram:.4f}%, max {self.similarity_to_tram_max:.4f}%)"
         )
 
         self.similarity_to_teleportal_label.setText(
-            f"Similarity to teleportal loading image: ({self.similarity_to_teleportal}, max {self.similarity_to_teleportal_max})"
+            f"Similarity to teleportal loading image: ({self.similarity_to_teleportal:.4f}%, max {self.similarity_to_teleportal_max:.4f}%)"
         )
 
         self.similarity_to_egg_label.setText(
-            f"Similarity to Itorash elevator image: ({self.similarity_to_egg}, max {self.similarity_to_egg_max})"
+            f"Similarity to Itorash elevator image: ({self.similarity_to_egg:.4f}%, max {self.similarity_to_egg_max:.4f}%)"
         )
+
+        if self.similarity_to_elevator > self.settings_dict["similarity_threshold_elevator"]:
+            self.ever_crossed_threshold_elevator = True
+        if self.similarity_to_tram > self.settings_dict["similarity_threshold_tram"]:
+            self.ever_crossed_threshold_tram = True
+        if self.similarity_to_teleportal > self.settings_dict["similarity_threshold_teleportal"]:
+            self.ever_crossed_threshold_teleportal = True
+        if self.similarity_to_egg > self.settings_dict["similarity_threshold_egg"]:
+            self.ever_crossed_threshold_egg = True
+
+        update_threshold_labels(self)
 
         if self.settings_dict["live_capture_region"]:
             set_preview_image(self.live_image, capture)
 
-        if self.settings_dict["cropped_capture_region"]:
-            set_preview_image(self.cropped_live_image, cropped_capture)
+        current_frame_time = perf_counter_ns()
+        fps = round(1000000000 / (current_frame_time - self.last_frame_time), 2)
+        self.last_frame_time = current_frame_time
+
+        self.analysis_fps_label.setText(f"Analysis FPS: {fps:.2f}")
+
+    def pause_timer(self):
+        # TODO: add what to do when you hit pause hotkey, if this even needs to be done
+        pass
 
     @override
     def closeEvent(self, event: QtGui.QCloseEvent | None = None):
@@ -191,15 +227,76 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
             sys.exit()
 
 
-def perform_image_analysis(self, capture: MatLike | None):
+def perform_black_level_analysis(self, capture: MatLike | None):
     if not is_valid_image(capture):
         return
 
-    self.is_frame_black, self.grayscale_threshold = is_black(capture)
-    self.similarity_to_elevator = compare_phash(capture, self.comparison_elevator_up_gravity)
-    self.similarity_to_tram = compare_phash(capture, self.comparison_train_left_power)
-    self.similarity_to_teleportal = compare_phash(capture, self.comparison_teleport_gravity)
-    self.similarity_to_egg = compare_phash(capture, self.comparison_capsule_gravity)
+    self.is_frame_black, self.black_level = is_black(capture)
+
+    self.black_level = self.black_level / 255.0 * 100
+
+
+def perform_similarity_analysis(self, capture: MatLike | None):
+    if not is_valid_image(capture):
+        return
+
+    comparison_method_to_use = get_comparison_method_by_name(
+        self.settings_dict["similarity_algorithm_elevator"]
+    )
+
+    self.similarity_to_elevator = (
+        max(
+            comparison_method_to_use(capture, self.comparison_elevator_up_power),
+            comparison_method_to_use(capture, self.comparison_elevator_up_varia),
+            comparison_method_to_use(capture, self.comparison_elevator_up_gravity),
+            comparison_method_to_use(capture, self.comparison_elevator_down_power),
+            comparison_method_to_use(capture, self.comparison_elevator_down_varia),
+            comparison_method_to_use(capture, self.comparison_elevator_down_gravity),
+        )
+        * 100
+    )
+
+    comparison_method_to_use = get_comparison_method_by_name(
+        self.settings_dict["similarity_algorithm_tram"]
+    )
+
+    self.similarity_to_tram = (
+        max(
+            comparison_method_to_use(capture, self.comparison_train_left_power),
+            comparison_method_to_use(capture, self.comparison_train_left_varia),
+            comparison_method_to_use(capture, self.comparison_train_left_gravity),
+            comparison_method_to_use(capture, self.comparison_train_right_power),
+            comparison_method_to_use(capture, self.comparison_train_right_varia),
+            comparison_method_to_use(capture, self.comparison_train_right_gravity),
+        )
+        * 100
+    )
+
+    self.similarity_to_teleportal = (
+        max(
+            comparison_method_to_use(capture, self.comparison_teleport_power),
+            comparison_method_to_use(capture, self.comparison_teleport_varia),
+            comparison_method_to_use(capture, self.comparison_teleport_gravity),
+        )
+        * 100
+    )
+
+    comparison_method_to_use = get_comparison_method_by_name(
+        self.settings_dict["similarity_algorithm_teleportal"]
+    )
+
+    self.similarity_to_egg = (
+        max(
+            comparison_method_to_use(capture, self.comparison_capsule_power),
+            comparison_method_to_use(capture, self.comparison_capsule_varia),
+            comparison_method_to_use(capture, self.comparison_capsule_gravity),
+        )
+        * 100
+    )
+
+    comparison_method_to_use = get_comparison_method_by_name(
+        self.settings_dict["similarity_algorithm_egg"]
+    )
 
     self.similarity_to_elevator_max = max(
         self.similarity_to_elevator_max, self.similarity_to_elevator
@@ -209,6 +306,64 @@ def perform_image_analysis(self, capture: MatLike | None):
         self.similarity_to_teleportal_max, self.similarity_to_teleportal
     )
     self.similarity_to_egg_max = max(self.similarity_to_egg_max, self.similarity_to_egg)
+
+
+def update_threshold_labels(self):  # noqa: PLR0912
+    if self.black_level < self.settings_dict["black_threshold"]:
+        self.black_indicator_label.setStyleSheet("background-color: green")
+    else:
+        self.black_indicator_label.setStyleSheet("background-color: red")
+
+    if self.similarity_to_elevator > self.settings_dict["similarity_threshold_elevator"]:
+        self.elevator_indicator_label.setStyleSheet("background-color: green")
+    else:
+        self.elevator_indicator_label.setStyleSheet("background-color: red")
+
+    if self.similarity_to_tram > self.settings_dict["similarity_threshold_tram"]:
+        self.tram_indicator_label.setStyleSheet("background-color: green")
+    else:
+        self.tram_indicator_label.setStyleSheet("background-color: red")
+
+    if self.similarity_to_teleportal > self.settings_dict["similarity_threshold_teleportal"]:
+        self.teleportal_indicator_label.setStyleSheet("background-color: green")
+    else:
+        self.teleportal_indicator_label.setStyleSheet("background-color: red")
+
+    if self.similarity_to_egg > self.settings_dict["similarity_threshold_egg"]:
+        self.egg_indicator_label.setStyleSheet("background-color: green")
+    else:
+        self.egg_indicator_label.setStyleSheet("background-color: red")
+
+    if self.ever_crossed_threshold_elevator:
+        self.elevator_indicator_ever_label.setStyleSheet("background-color: green")
+    else:
+        self.elevator_indicator_ever_label.setStyleSheet("background-color: red")
+
+    if self.ever_crossed_threshold_tram:
+        self.tram_indicator_ever_label.setStyleSheet("background-color: green")
+    else:
+        self.tram_indicator_ever_label.setStyleSheet("background-color: red")
+
+    if self.ever_crossed_threshold_teleportal:
+        self.teleportal_indicator_ever_label.setStyleSheet("background-color: green")
+    else:
+        self.teleportal_indicator_ever_label.setStyleSheet("background-color: red")
+
+    if self.ever_crossed_threshold_egg:
+        self.egg_indicator_ever_label.setStyleSheet("background-color: green")
+    else:
+        self.egg_indicator_ever_label.setStyleSheet("background-color: red")
+
+
+def reset_statistics(self):
+    self.similarity_to_elevator_max = 0.0
+    self.similarity_to_tram_max = 0.0
+    self.similarity_to_teleportal_max = 0.0
+    self.similarity_to_egg_max = 0.0
+    self.ever_crossed_threshold_tram = False
+    self.ever_crossed_threshold_elevator = False
+    self.ever_crossed_threshold_teleportal = False
+    self.ever_crossed_threshold_egg = False
 
 
 def load_comparison_images(self):
