@@ -3,13 +3,15 @@ import os
 import subprocess
 import sys
 import tomllib
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from functools import partial
 from pathlib import Path
 from platform import version
 from threading import Thread
 from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar
 
+import cv2
+import numpy as np
 from cv2.typing import MatLike
 from gen.build_vars import ZDCURTAIN_BUILD_NUMBER, ZDCURTAIN_GITHUB_REPOSITORY
 
@@ -102,6 +104,14 @@ def get_window_bounds(hwnd: int) -> tuple[int, int, int, int]:
     window_width = extended_frame_bounds.right - extended_frame_bounds.left
     window_height = extended_frame_bounds.bottom - extended_frame_bounds.top
     return window_left_bounds, window_top_bounds, window_width, window_height
+
+
+def ms_to_ns(ms):
+    return ms * 1000000
+
+
+def ns_to_ms(ns):
+    return ns / 1000000
 
 
 def decimal(value: float):
@@ -202,10 +212,39 @@ def list_processes():
     ).splitlines()[1:]  # Skip the header line
 
 
+def imread(filename: str, flags: int = cv2.IMREAD_COLOR):
+    return cv2.imdecode(np.fromfile(filename, dtype=np.uint8), flags)
+
+
+def imwrite(filename: str, img: MatLike, params: Sequence[int] = ()):
+    success, encoded_img = cv2.imencode(os.path.splitext(filename)[1], img, params)
+    if not success:
+        raise OSError(f"cv2 could not write to path {filename}")
+    encoded_img.tofile(filename)
+
+
+def check_if_image_has_transparency(image: MatLike):
+    # Check if there's a transparency channel (4th channel)
+    # and if at least one pixel is transparent (< 255)
+    if image.shape[ImageShape.Channels] != BGRA_CHANNEL_COUNT:
+        return False
+    mean: float = image[:, :, ColorChannel.Alpha].mean()
+    if mean == 0:
+        # Non-transparent images code path is usually faster and simpler, so let's return that
+        return False
+        # TODO: error message if all pixels are transparent
+        # (the image appears as all black in windows,
+        # so it's not obvious for the user what they did wrong)
+
+    return mean != MAXBYTE
+
+
 DWMWA_EXTENDED_FRAME_BOUNDS = 9
 MAXBYTE = 255
 ONE_SECOND = 1000
 """1000 milliseconds in 1 second"""
+ONE_DREAD_FRAME = 1 / 60
+"""16.67... milliseconds in one frame of Metroid Dread"""
 BGR_CHANNEL_COUNT = 3
 """How many channels in a BGR image"""
 BGRA_CHANNEL_COUNT = 4

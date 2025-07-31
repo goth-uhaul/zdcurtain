@@ -12,7 +12,7 @@ class UserProfileDict(TypedDict):
     capture_device_name: str
     captured_window_title: str
     capture_region: Region
-    black_threshold: int
+    black_threshold: float
     similarity_algorithm_elevator: str
     similarity_algorithm_tram: str
     similarity_algorithm_teleportal: str
@@ -21,6 +21,8 @@ class UserProfileDict(TypedDict):
     similarity_threshold_tram: int
     similarity_threshold_teleportal: int
     similarity_threshold_egg: int
+    load_confidence_threshold_ms: int
+
     pause_hotkey: str
 
     @override
@@ -37,14 +39,15 @@ DEFAULT_PROFILE = UserProfileDict(
     capture_device_name="",
     captured_window_title="",
     capture_region=Region(x=0, y=0, width=1, height=1),
-    black_threshold=1,
+    black_threshold=0.5,
     similarity_algorithm_elevator="histogram",
     similarity_algorithm_tram="l2norm",
     similarity_algorithm_teleportal="l2norm",
-    similarity_algorithm_egg="histogram",
+    similarity_algorithm_egg="l2norm",
     similarity_threshold_elevator=90,
     similarity_threshold_tram=87,
     similarity_threshold_teleportal=89,
     similarity_threshold_egg=90,
+    load_confidence_threshold_ms=500,
     pause_hotkey="",
 )

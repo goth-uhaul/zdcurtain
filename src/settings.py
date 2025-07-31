@@ -122,7 +122,7 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
     def __fps_limit_changed(self, value: int):
         value = self.fps_limit_spinbox.value()
         self._zdcurtain_ref.settings_dict["fps_limit"] = value
-        self._zdcurtain_ref.timer_live_image.setInterval(int(ONE_SECOND / value))
+        self._zdcurtain_ref.timer_frame_analysis.setInterval(int(ONE_SECOND / value))
 
     @fire_and_forget
     def __set_all_capture_devices(self):

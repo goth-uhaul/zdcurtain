@@ -122,6 +122,32 @@ def compare_phash(source: MatLike, capture: MatLike, mask: MatLike | None = None
     return __cv2_phash(source, capture)
 
 
+def normalize_brightness_histogram(capture: MatLike):
+    image_hsv = cv2.cvtColor(capture, cv2.COLOR_BGR2HSV)
+
+    h, s, v = cv2.split(image_hsv)
+
+    v_equalized = cv2.equalizeHist(v)
+
+    image_hsv = cv2.merge([h, s, v_equalized])
+
+    normalized_image = cv2.cvtColor(image_hsv, cv2.COLOR_HSV2BGR)
+
+    return cv2.cvtColor(normalized_image, cv2.COLOR_BGR2BGRA)
+
+
+def normalize_brightness_clahe(capture: MatLike):
+    image_hsv = cv2.cvtColor(capture, cv2.COLOR_BGR2HSV)
+
+    clahe = cv2.createCLAHE(clipLimit=64.0, tileGridSize=(8, 8))
+
+    image_hsv[:, :, 2] = clahe.apply(image_hsv[:, :, 2])
+
+    normalized_image = cv2.cvtColor(image_hsv, cv2.COLOR_HSV2BGR)
+
+    return cv2.cvtColor(normalized_image, cv2.COLOR_BGR2BGRA)
+
+
 def __compare_dummy(*_: object):
     return 0.0
 

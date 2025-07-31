@@ -33,20 +33,27 @@ from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
 
 import error_messages
 from capture_method import CaptureMethodBase, CaptureMethodEnum, change_capture_method
-from frame_analysis import get_comparison_method_by_name, get_top_third_of_capture, is_black
+from frame_analysis import (
+    get_comparison_method_by_name,
+    get_top_third_of_capture,
+    is_black,
+    normalize_brightness_histogram,
+)
 from region_selection import select_window
 from settings import open_settings
 from user_profile import DEFAULT_PROFILE
 from utils import (
-    BGR_CHANNEL_COUNT,
     BGRA_CHANNEL_COUNT,
     FROZEN,
+    ONE_DREAD_FRAME,
     ONE_SECOND,
     ZDCURTAIN_VERSION,
-    ImageShape,
     is_valid_image,
     list_processes,
+    ms_to_ns,
+    ns_to_ms,
 )
+from ZDImage import ZDImage
 
 
 class ZDCurtain(QMainWindow, design.Ui_MainWindow):
@@ -56,14 +63,14 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
     show_error_signal = QtCore.Signal(FunctionType)
 
     # Timers
-    timer_live_image = QtCore.QTimer()
-    timer_live_image.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
+    timer_general = QtCore.QTimer()
+    timer_general.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
     timer_frame_analysis = QtCore.QTimer()
     timer_frame_analysis.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
 
     SettingsWidget: settings.Ui_SettingsWidget | None = None
 
-    def __init__(self):
+    def __init__(self):  # noqa: PLR0915 constructor
         super().__init__()
 
         self.hwnd = 0
@@ -71,6 +78,18 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.capture_method = CaptureMethodBase(self)
         self.is_running = False
         self.last_frame_time = 1
+
+        self.screenshot_timer = 0
+        self.screenshot_counter = 1
+
+        self.black_screen_detected_at_timestamp = 0
+        self.black_screen_over_detected_at_timestamp = 0
+        self.potential_load_detected_at_timestamp = 0
+        self.confirmed_load_detected_at_timestamp = 0
+        self.load_confidence_delta = 0
+
+        self.in_black_screen = False
+        self.active_load_type = "none"
 
         # Heuristics
         self.black_level = 1.0
@@ -83,21 +102,14 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.similarity_to_elevator_max = 0.0
         self.similarity_to_egg = 0.0
         self.similarity_to_egg_max = 0.0
-        self.ever_crossed_threshold_tram = False
-        self.ever_crossed_threshold_elevator = False
-        self.ever_crossed_threshold_teleportal = False
-        self.ever_crossed_threshold_egg = False
 
         # comparison images
         self.comparison_capsule_gravity = None
         self.comparison_capsule_power = None
         self.comparison_capsule_varia = None
-        self.comparison_elevator_down_gravity = None
-        self.comparison_elevator_down_power = None
-        self.comparison_elevator_down_varia = None
-        self.comparison_elevator_up_gravity = None
-        self.comparison_elevator_up_power = None
-        self.comparison_elevator_up_varia = None
+        self.comparison_elevator_gravity = None
+        self.comparison_elevator_power = None
+        self.comparison_elevator_varia = None
         self.comparison_teleport_gravity = None
         self.comparison_teleport_power = None
         self.comparison_teleport_varia = None
@@ -132,11 +144,11 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.select_window_button.clicked.connect(lambda: select_window(self))
         self.reset_statistics_button.clicked.connect(lambda: reset_statistics(self))
 
-        # live image preview
-        self.timer_live_image.timeout.connect(
+        self.timer_frame_analysis.timeout.connect(
             lambda: self.__update_live_image_details(None, called_from_timer=True)
         )
-        self.timer_live_image.start(int(ONE_SECOND / self.settings_dict["fps_limit"]))
+        self.timer_general.start(int(ONE_SECOND / 60))
+        self.timer_frame_analysis.start(int(ONE_SECOND / self.settings_dict["fps_limit"]))
 
         self.show()
 
@@ -146,11 +158,13 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         *,
         called_from_timer: bool = False,
     ):
+        frame_start_time = perf_counter_ns()
         cropped_capture = None
 
         if called_from_timer:
             if self.is_running:
                 return
+
             capture = self.capture_method.get_frame()
 
             if not is_valid_image(capture):
@@ -160,58 +174,32 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
             resized_capture = cv2.resize(capture, dim)
             cropped_capture = get_top_third_of_capture(resized_capture)
+            normalized_capture = normalize_brightness_histogram(resized_capture)
 
             perform_black_level_analysis(self, cropped_capture)
-            perform_similarity_analysis(self, resized_capture)
+            perform_similarity_analysis(self, resized_capture, normalized_capture)
+            perform_load_removal_logic(self)
 
-        # Update title from target window or Capture Device name
-        capture_region_window_label = (
-            self.settings_dict["capture_device_name"]
-            if self.settings_dict["capture_method"] == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE
-            else self.settings_dict["captured_window_title"]
-        )
-        self.capture_region_window_label.setText(capture_region_window_label)
+            if self.screenshot_timer >= 60:
+                # imwrite(f"sshot/sshot_{self.screenshot_counter}.png", normalized_capture)
+                self.screenshot_counter += 1
 
-        self.image_black_label.setText(
-            f"Is screen black: {self.is_frame_black},"
-            + f"current black level {self.black_level:.4f}%"
-        )
+            self.screenshot_timer += 1
 
-        self.similarity_to_elevator_label.setText(
-            f"Similarity to elevator loading image: ({self.similarity_to_elevator:.4f}%, max {self.similarity_to_elevator_max:.4f}%)"
-        )
-
-        self.similarity_to_tram_label.setText(
-            f"Similarity to tram loading image: ({self.similarity_to_tram:.4f}%, max {self.similarity_to_tram_max:.4f}%)"
-        )
-
-        self.similarity_to_teleportal_label.setText(
-            f"Similarity to teleportal loading image: ({self.similarity_to_teleportal:.4f}%, max {self.similarity_to_teleportal_max:.4f}%)"
-        )
-
-        self.similarity_to_egg_label.setText(
-            f"Similarity to Itorash elevator image: ({self.similarity_to_egg:.4f}%, max {self.similarity_to_egg_max:.4f}%)"
-        )
-
-        if self.similarity_to_elevator > self.settings_dict["similarity_threshold_elevator"]:
-            self.ever_crossed_threshold_elevator = True
-        if self.similarity_to_tram > self.settings_dict["similarity_threshold_tram"]:
-            self.ever_crossed_threshold_tram = True
-        if self.similarity_to_teleportal > self.settings_dict["similarity_threshold_teleportal"]:
-            self.ever_crossed_threshold_teleportal = True
-        if self.similarity_to_egg > self.settings_dict["similarity_threshold_egg"]:
-            self.ever_crossed_threshold_egg = True
-
-        update_threshold_labels(self)
+        update_labels(self)
 
         if self.settings_dict["live_capture_region"]:
-            set_preview_image(self.live_image, capture)
+            set_preview_image(self.live_image, resized_capture)
 
-        current_frame_time = perf_counter_ns()
-        fps = round(1000000000 / (current_frame_time - self.last_frame_time), 2)
-        self.last_frame_time = current_frame_time
+        frame_end_time = perf_counter_ns()
 
-        self.analysis_fps_label.setText(f"Analysis FPS: {fps:.2f}")
+        frame_time = ns_to_ms(frame_end_time - frame_start_time)
+
+        last_load_time = ns_to_ms(
+            self.black_screen_over_detected_at_timestamp - self.black_screen_detected_at_timestamp
+        )
+
+        self.analysis_fps_label.setText(f"Frame Time: {frame_time:.2f}, lbd {last_load_time}")
 
     def pause_timer(self):
         # TODO: add what to do when you hit pause hotkey, if this even needs to be done
@@ -233,6 +221,89 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         event.ignore()
 
 
+def check_load_confidence(self, similarity, threshold):
+    if similarity > threshold and self.active_load_type == "none":
+        if self.potential_load_detected_at_timestamp == 0:
+            self.potential_load_detected_at_timestamp = perf_counter_ns()
+
+        if perf_counter_ns() - self.potential_load_detected_at_timestamp > ms_to_ns(
+            self.settings_dict["load_confidence_threshold_ms"]
+        ):
+            self.confirmed_load_detected_at_timestamp = perf_counter_ns()
+
+            self.load_confidence_delta = (
+                self.confirmed_load_detected_at_timestamp - self.black_screen_detected_at_timestamp
+            )
+
+            return True
+
+    return False
+
+
+def check_if_load_ending(self):
+    if self.active_load_type == "none":
+        return
+
+    if (
+        self.black_screen_over_detected_at_timestamp > self.confirmed_load_detected_at_timestamp
+        and perf_counter_ns() - self.black_screen_over_detected_at_timestamp
+        > self.load_confidence_delta
+    ):
+        self.active_load_type = "none"
+        self.load_confidence_delta = 0
+        self.potential_load_detected_at_timestamp = 0
+        self.confirmed_load_detected_at_timestamp = 0
+
+
+def perform_load_removal_logic(self):
+    if self.black_level < self.settings_dict["black_threshold"] and not self.in_black_screen:
+        self.in_black_screen = True
+        self.black_screen_detected_at_timestamp = perf_counter_ns()
+
+    if self.black_level >= self.settings_dict["black_threshold"] and self.in_black_screen:
+        self.black_screen_over_detected_at_timestamp = perf_counter_ns()
+        self.in_black_screen = False
+
+    if (
+        self.in_black_screen
+        and self.active_load_type == "none"
+        and perf_counter_ns() - self.black_screen_detected_at_timestamp
+        > ms_to_ns(ONE_DREAD_FRAME * 7)
+    ):
+        self.confirmed_load_detected_at_timestamp = perf_counter_ns()
+        self.active_load_type = "black"
+        # TODO: pause livesplit timer for black screen load
+
+    if self.active_load_type in {"none", "black"}:
+        if check_load_confidence(
+            self,
+            self.similarity_to_elevator,
+            self.settings_dict["similarity_threshold_elevator"],
+        ):
+            self.active_load_type = "elevator"
+
+        if check_load_confidence(
+            self, self.similarity_to_tram, self.settings_dict["similarity_threshold_tram"]
+        ):
+            self.active_load_type = "tram"
+
+        if check_load_confidence(
+            self,
+            self.similarity_to_teleportal,
+            self.settings_dict["similarity_threshold_teleportal"],
+        ):
+            self.active_load_type = "teleportal"
+
+        if check_load_confidence(
+            self,
+            self.similarity_to_egg,
+            self.settings_dict["similarity_threshold_egg"],
+        ):
+            self.active_load_type = "capsule"
+
+    check_if_load_ending(self)
+
+
 def perform_black_level_analysis(self, capture: MatLike | None):
     if not is_valid_image(capture):
         return
@@ -242,7 +313,7 @@ def perform_black_level_analysis(self, capture: MatLike | None):
     self.black_level = self.black_level / 255.0 * 100
 
 
-def perform_similarity_analysis(self, capture: MatLike | None):
+def perform_similarity_analysis(self, capture: MatLike | None, normalized_capture: MatLike):
     if not is_valid_image(capture):
         return
 
@@ -252,12 +323,18 @@ def perform_similarity_analysis(self, capture: MatLike | None):
 
     self.similarity_to_elevator = (
         max(
-            comparison_method_to_use(capture, self.comparison_elevator_up_power),
-            comparison_method_to_use(capture, self.comparison_elevator_up_varia),
-            comparison_method_to_use(capture, self.comparison_elevator_up_gravity),
-            comparison_method_to_use(capture, self.comparison_elevator_down_power),
-            comparison_method_to_use(capture, self.comparison_elevator_down_varia),
-            comparison_method_to_use(capture, self.comparison_elevator_down_gravity),
+            comparison_method_to_use(
+                normalized_capture,
+                self.comparison_elevator_power.image_data,
+            ),
+            comparison_method_to_use(
+                normalized_capture,
+                self.comparison_elevator_varia.image_data,
+            ),
+            comparison_method_to_use(
+                normalized_capture,
+                self.comparison_elevator_gravity.image_data,
+            ),
         )
         * 100
     )
@@ -268,21 +345,12 @@ def perform_similarity_analysis(self, capture: MatLike | None):
 
     self.similarity_to_tram = (
         max(
-            comparison_method_to_use(capture, self.comparison_train_left_power),
-            comparison_method_to_use(capture, self.comparison_train_left_varia),
-            comparison_method_to_use(capture, self.comparison_train_left_gravity),
-            comparison_method_to_use(capture, self.comparison_train_right_power),
-            comparison_method_to_use(capture, self.comparison_train_right_varia),
-            comparison_method_to_use(capture, self.comparison_train_right_gravity),
-        )
-        * 100
-    )
-
-    self.similarity_to_teleportal = (
-        max(
-            comparison_method_to_use(capture, self.comparison_teleport_power),
-            comparison_method_to_use(capture, self.comparison_teleport_varia),
-            comparison_method_to_use(capture, self.comparison_teleport_gravity),
+            comparison_method_to_use(capture, self.comparison_train_left_power.image_data),
+            comparison_method_to_use(capture, self.comparison_train_left_varia.image_data),
+            comparison_method_to_use(capture, self.comparison_train_left_gravity.image_data),
+            comparison_method_to_use(capture, self.comparison_train_right_power.image_data),
+            comparison_method_to_use(capture, self.comparison_train_right_varia.image_data),
+            comparison_method_to_use(capture, self.comparison_train_right_gravity.image_data),
         )
         * 100
     )
@@ -291,17 +359,26 @@ def perform_similarity_analysis(self, capture: MatLike | None):
         self.settings_dict["similarity_algorithm_teleportal"]
     )
 
-    self.similarity_to_egg = (
+    self.similarity_to_teleportal = (
         max(
-            comparison_method_to_use(capture, self.comparison_capsule_power),
-            comparison_method_to_use(capture, self.comparison_capsule_varia),
-            comparison_method_to_use(capture, self.comparison_capsule_gravity),
+            comparison_method_to_use(capture, self.comparison_teleport_power.image_data),
+            comparison_method_to_use(capture, self.comparison_teleport_varia.image_data),
+            comparison_method_to_use(capture, self.comparison_teleport_gravity.image_data),
         )
         * 100
     )
 
     comparison_method_to_use = get_comparison_method_by_name(
         self.settings_dict["similarity_algorithm_egg"]
+    )
+
+    self.similarity_to_egg = (
+        max(
+            comparison_method_to_use(capture, self.comparison_capsule_power.image_data),
+            comparison_method_to_use(capture, self.comparison_capsule_varia.image_data),
+            comparison_method_to_use(capture, self.comparison_capsule_gravity.image_data),
+        )
+        * 100
     )
 
     self.similarity_to_elevator_max = max(
@@ -314,7 +391,39 @@ def perform_similarity_analysis(self, capture: MatLike | None):
     self.similarity_to_egg_max = max(self.similarity_to_egg_max, self.similarity_to_egg)
 
 
-def update_threshold_labels(self):  # noqa: PLR0912
+def update_labels(self):  # noqa: PLR0912
+    # Update title from target window or Capture Device name
+    capture_region_window_label = (
+        self.settings_dict["capture_device_name"]
+        if self.settings_dict["capture_method"] == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE
+        else self.settings_dict["captured_window_title"]
+    )
+    self.capture_region_window_label.setText(capture_region_window_label)
+
+    self.image_black_label.setText(
+        f"Is screen black: {self.is_frame_black}," + f"current black level {self.black_level:.4f}%"
+    )
+
+    self.similarity_to_elevator_label.setText(
+        f"Similarity to elevator loading image: ({self.similarity_to_elevator:.4f}%, "
+        + f"max {self.similarity_to_elevator_max:.4f}%)"
+    )
+
+    self.similarity_to_tram_label.setText(
+        f"Similarity to tram loading image: ({self.similarity_to_tram:.4f}%, "
+        + f"max {self.similarity_to_tram_max:.4f}%)"
+    )
+
+    self.similarity_to_teleportal_label.setText(
+        f"Similarity to teleportal loading image: ({self.similarity_to_teleportal:.4f}%, "
+        + f"max {self.similarity_to_teleportal_max:.4f}%)"
+    )
+
+    self.similarity_to_egg_label.setText(
+        f"Similarity to Itorash elevator image: ({self.similarity_to_egg:.4f}%, "
+        + f"max {self.similarity_to_egg_max:.4f}%)"
+    )
+
     if self.black_level < self.settings_dict["black_threshold"]:
         self.black_indicator_label.setStyleSheet("background-color: green")
     else:
@@ -340,22 +449,27 @@ def update_threshold_labels(self):  # noqa: PLR0912
     else:
         self.egg_indicator_label.setStyleSheet("background-color: red")
 
-    if self.ever_crossed_threshold_elevator:
+    if self.active_load_type == "black":
+        self.black_load_indicator_label.setStyleSheet("background-color: green")
+    else:
+        self.black_load_indicator_label.setStyleSheet("background-color: red")
+
+    if self.active_load_type == "elevator":
         self.elevator_indicator_ever_label.setStyleSheet("background-color: green")
     else:
         self.elevator_indicator_ever_label.setStyleSheet("background-color: red")
 
-    if self.ever_crossed_threshold_tram:
+    if self.active_load_type == "tram":
         self.tram_indicator_ever_label.setStyleSheet("background-color: green")
     else:
         self.tram_indicator_ever_label.setStyleSheet("background-color: red")
 
-    if self.ever_crossed_threshold_teleportal:
+    if self.active_load_type == "teleportal":
         self.teleportal_indicator_ever_label.setStyleSheet("background-color: green")
     else:
         self.teleportal_indicator_ever_label.setStyleSheet("background-color: red")
 
-    if self.ever_crossed_threshold_egg:
+    if self.active_load_type == "capsule":
         self.egg_indicator_ever_label.setStyleSheet("background-color: green")
     else:
         self.egg_indicator_ever_label.setStyleSheet("background-color: red")
@@ -366,10 +480,6 @@ def reset_statistics(self):
     self.similarity_to_tram_max = 0.0
     self.similarity_to_teleportal_max = 0.0
     self.similarity_to_egg_max = 0.0
-    self.ever_crossed_threshold_tram = False
-    self.ever_crossed_threshold_elevator = False
-    self.ever_crossed_threshold_teleportal = False
-    self.ever_crossed_threshold_egg = False
 
 
 def load_comparison_images(self):
@@ -378,23 +488,21 @@ def load_comparison_images(self):
     )
     self.comparison_capsule_power = read_and_format_image("res/comparison/capsule_power_first.png")
     self.comparison_capsule_varia = read_and_format_image("res/comparison/capsule_varia_first.png")
-    self.comparison_elevator_down_gravity = read_and_format_image(
+    self.comparison_elevator_gravity = read_and_format_image(
         "res/comparison/elevator_down_gravity_first.png"
     )
-    self.comparison_elevator_down_power = read_and_format_image(
-        "res/comparison/elevator_down_power_first.png"
-    )
-    self.comparison_elevator_down_varia = read_and_format_image(
+    self.comparison_elevator_power = read_and_format_image("res/comparison/elevator_power.png")
+    self.comparison_elevator_varia = read_and_format_image(
         "res/comparison/elevator_down_varia_first.png"
     )
-    self.comparison_elevator_up_gravity = read_and_format_image(
-        "res/comparison/elevator_up_gravity_first.png"
+    self.comparison_mask_elevator_gravity = read_and_format_image(
+        "res/comparison/mask_elevator_gravity.png"
     )
-    self.comparison_elevator_up_power = read_and_format_image(
-        "res/comparison/elevator_up_power_first.png"
+    self.comparison_mask_elevator_power = read_and_format_image(
+        "res/comparison/mask_elevator_power.png"
     )
-    self.comparison_elevator_up_varia = read_and_format_image(
-        "res/comparison/elevator_up_varia_first.png"
+    self.comparison_mask_elevator_varia = read_and_format_image(
+        "res/comparison/mask_elevator_varia.png"
     )
     self.comparison_teleport_gravity = read_and_format_image(
         "res/comparison/teleport_gravity_first.png"
@@ -426,12 +534,7 @@ def load_comparison_images(self):
 
 
 def read_and_format_image(filename):
-    image_data = cv2.imread(filename)
-
-    if image_data.shape[ImageShape.Channels] == BGR_CHANNEL_COUNT:
-        image_data = cv2.cvtColor(image_data, cv2.COLOR_BGR2BGRA)
-
-    return image_data
+    return ZDImage(filename)
 
 
 def set_preview_image(qlabel: QLabel, image: MatLike | None):
