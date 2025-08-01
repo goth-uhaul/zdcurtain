@@ -103,6 +103,7 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         )
         self.__enable_capture_device_if_its_selected_method(selected_capture_method)
         change_capture_method(selected_capture_method, self._zdcurtain_ref)
+
         return selected_capture_method
 
     def __capture_device_changed(self):

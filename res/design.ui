@@ -792,7 +792,7 @@
      </property>
     </widget>
    </widget>
-   <widget class="QPushButton" name="begin_tracking_button">
+   <widget class="QPushButton" name="begin_end_tracking_button">
     <property name="geometry">
      <rect>
       <x>660</x>

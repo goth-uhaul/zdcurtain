@@ -78,6 +78,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.capture_method = CaptureMethodBase(self)
         self.is_running = False
         self.last_frame_time = 1
+        self.is_tracking = False
 
         self.screenshot_timer = 0
         self.screenshot_counter = 1
@@ -102,6 +103,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.similarity_to_elevator_max = 0.0
         self.similarity_to_egg = 0.0
         self.similarity_to_egg_max = 0.0
+        self.similarity_to_end_screen = 0.0
+        self.similarity_to_end_screen_max = 0.0
 
         # comparison images
         self.comparison_capsule_gravity = None
@@ -141,8 +144,9 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.action_exit.triggered.connect(lambda: self.closeEvent())  # noqa: PLW0108
 
         # connecting button clicks to functions
-        self.select_window_button.clicked.connect(lambda: select_window(self))
+        self.select_window_button.clicked.connect(lambda: select_window_and_start_tracking(self))
         self.reset_statistics_button.clicked.connect(lambda: reset_statistics(self))
+        self.begin_end_tracking_button.clicked.connect(self.toggle_tracking)
 
         self.timer_frame_analysis.timeout.connect(
             lambda: self.__update_live_image_details(None, called_from_timer=True)
@@ -171,14 +175,19 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
                 return
 
             dim = (640, 360)
-
             resized_capture = cv2.resize(capture, dim)
-            cropped_capture = get_top_third_of_capture(resized_capture)
-            normalized_capture = normalize_brightness_histogram(resized_capture)
 
-            perform_black_level_analysis(self, cropped_capture)
-            perform_similarity_analysis(self, resized_capture, normalized_capture)
-            perform_load_removal_logic(self)
+            if self.is_tracking:
+                cropped_capture = get_top_third_of_capture(resized_capture)
+                normalized_capture = normalize_brightness_histogram(resized_capture)
+
+                perform_black_level_analysis(self, cropped_capture)
+                perform_similarity_analysis(self, resized_capture, normalized_capture)
+                perform_load_removal_logic(self)
+
+                if is_end_screen(self, self.similarity_to_end_screen, 98):
+                    # stop tracking
+                    self.toggle_tracking()
 
             if self.screenshot_timer >= 60:
                 # imwrite(f"sshot/sshot_{self.screenshot_counter}.png", normalized_capture)
@@ -200,6 +209,14 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         )
 
         self.analysis_fps_label.setText(f"Frame Time: {frame_time:.2f}, lbd {last_load_time}")
+
+    def toggle_tracking(self):
+        self.is_tracking = not self.is_tracking
+
+        if self.is_tracking:
+            self.begin_end_tracking_button.setText("End Tracking")
+        else:
+            self.begin_end_tracking_button.setText("Begin Tracking")
 
     def pause_timer(self):
         # TODO: add what to do when you hit pause hotkey, if this even needs to be done
@@ -238,6 +255,10 @@ def check_load_confidence(self, similarity, threshold):
             return True
 
     return False
+
+
+def is_end_screen(self, similarity, threshold):
+    return similarity > threshold and self.active_load_type == "none"
 
 
 def check_if_load_ending(self):
@@ -390,6 +411,27 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
     )
     self.similarity_to_egg_max = max(self.similarity_to_egg_max, self.similarity_to_egg)
 
+    self.similarity_to_egg = (
+        max(
+            comparison_method_to_use(capture, self.comparison_capsule_power.image_data),
+            comparison_method_to_use(capture, self.comparison_capsule_varia.image_data),
+            comparison_method_to_use(capture, self.comparison_capsule_gravity.image_data),
+        )
+        * 100
+    )
+
+    comparison_method_to_use = get_comparison_method_by_name(
+        self.settings_dict["similarity_algorithm_end_screen"]
+    )
+
+    self.similarity_to_end_screen = (
+        comparison_method_to_use(capture, self.comparison_end_screen.image_data) * 100
+    )
+
+    self.similarity_to_end_screen_max = max(
+        self.similarity_to_end_screen_max, self.similarity_to_end_screen
+    )
+
 
 def update_labels(self):  # noqa: PLR0912
     # Update title from target window or Capture Device name
@@ -488,22 +530,9 @@ def load_comparison_images(self):
     )
     self.comparison_capsule_power = read_and_format_image("res/comparison/capsule_power_first.png")
     self.comparison_capsule_varia = read_and_format_image("res/comparison/capsule_varia_first.png")
-    self.comparison_elevator_gravity = read_and_format_image(
-        "res/comparison/elevator_down_gravity_first.png"
-    )
+    self.comparison_elevator_gravity = read_and_format_image("res/comparison/elevator_gravity.png")
     self.comparison_elevator_power = read_and_format_image("res/comparison/elevator_power.png")
-    self.comparison_elevator_varia = read_and_format_image(
-        "res/comparison/elevator_down_varia_first.png"
-    )
-    self.comparison_mask_elevator_gravity = read_and_format_image(
-        "res/comparison/mask_elevator_gravity.png"
-    )
-    self.comparison_mask_elevator_power = read_and_format_image(
-        "res/comparison/mask_elevator_power.png"
-    )
-    self.comparison_mask_elevator_varia = read_and_format_image(
-        "res/comparison/mask_elevator_varia.png"
-    )
+    self.comparison_elevator_varia = read_and_format_image("res/comparison/elevator_varia.png")
     self.comparison_teleport_gravity = read_and_format_image(
         "res/comparison/teleport_gravity_first.png"
     )
@@ -531,6 +560,7 @@ def load_comparison_images(self):
     self.comparison_train_right_varia = read_and_format_image(
         "res/comparison/train_right_varia_first.png"
     )
+    self.comparison_end_screen = read_and_format_image("res/comparison/end_screen.png")
 
 
 def read_and_format_image(filename):
@@ -560,6 +590,13 @@ def set_preview_image(qlabel: QLabel, image: MatLike | None):
                 QtCore.Qt.TransformationMode.SmoothTransformation,
             )
         )
+
+
+def select_window_and_start_tracking(self):
+    if self.settings_dict["start_tracking_automatically"] and not self.is_tracking:
+        self.toggle_tracking()
+
+    select_window(self)
 
 
 def is_already_open():
