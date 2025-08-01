@@ -32,7 +32,8 @@ from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
 
 import error_messages
-from capture_method import CaptureMethodBase, CaptureMethodEnum, change_capture_method
+import user_profile
+from capture_method import CaptureMethodBase, CaptureMethodEnum
 from frame_analysis import (
     get_comparison_method_by_name,
     get_top_third_of_capture,
@@ -40,7 +41,7 @@ from frame_analysis import (
     normalize_brightness_histogram,
 )
 from region_selection import select_window
-from settings import open_settings
+from settings import get_default_settings_from_ui, open_settings
 from user_profile import DEFAULT_PROFILE
 from utils import (
     BGRA_CHANNEL_COUNT,
@@ -76,13 +77,14 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.hwnd = 0
         self.last_saved_settings = deepcopy(DEFAULT_PROFILE)
         self.capture_method = CaptureMethodBase(self)
+
         self.is_running = False
-        self.last_frame_time = 1
         self.is_tracking = False
 
         self.screenshot_timer = 0
         self.screenshot_counter = 1
 
+        # Confidence algorithm
         self.black_screen_detected_at_timestamp = 0
         self.black_screen_over_detected_at_timestamp = 0
         self.potential_load_detected_at_timestamp = 0
@@ -90,6 +92,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.load_confidence_delta = 0
 
         self.in_black_screen = False
+        self.last_black_screen_time = 0
         self.active_load_type = "none"
 
         # Heuristics
@@ -105,6 +108,9 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.similarity_to_egg_max = 0.0
         self.similarity_to_end_screen = 0.0
         self.similarity_to_end_screen_max = 0.0
+
+        # performance
+        self.last_frame_time = 1
 
         # comparison images
         self.comparison_capsule_gravity = None
@@ -135,9 +141,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.setupUi(self)
         self.setWindowTitle(f"ZDCurtain v.{ZDCURTAIN_VERSION}")
 
-        self.settings_dict = deepcopy(DEFAULT_PROFILE)
-
-        change_capture_method(CaptureMethodEnum.WINDOWS_GRAPHICS_CAPTURE, self)
+        self.settings_dict = get_default_settings_from_ui(self)
 
         # connecting menu actions
         self.action_settings.triggered.connect(lambda: open_settings(self))
@@ -155,6 +159,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.timer_frame_analysis.start(int(ONE_SECOND / self.settings_dict["fps_limit"]))
 
         self.show()
+
+        user_profile.load_settings_on_open(self)
 
     def __update_live_image_details(
         self,
@@ -204,11 +210,16 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         frame_time = ns_to_ms(frame_end_time - frame_start_time)
 
-        last_load_time = ns_to_ms(
-            self.black_screen_over_detected_at_timestamp - self.black_screen_detected_at_timestamp
-        )
+        if self.black_screen_detected_at_timestamp <= self.black_screen_over_detected_at_timestamp:
+            self.last_black_screen_time = ns_to_ms(
+                self.black_screen_over_detected_at_timestamp
+                - self.black_screen_detected_at_timestamp
+            )
 
-        self.analysis_fps_label.setText(f"Frame Time: {frame_time:.2f}, lbd {last_load_time}")
+        self.analysis_status_label.setText(
+            f"Frame Time: {frame_time:.2f}, "
+            + f"Last Black Screen Duration {self.last_black_screen_time}ms"
+        )
 
     def toggle_tracking(self):
         self.is_tracking = not self.is_tracking
@@ -342,18 +353,24 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
         self.settings_dict["similarity_algorithm_elevator"]
     )
 
+    capture_type_to_use = (
+        normalized_capture
+        if self.settings_dict["similarity_use_normalized_capture_elevator"]
+        else capture
+    )
+
     self.similarity_to_elevator = (
         max(
             comparison_method_to_use(
-                normalized_capture,
+                capture_type_to_use,
                 self.comparison_elevator_power.image_data,
             ),
             comparison_method_to_use(
-                normalized_capture,
+                capture_type_to_use,
                 self.comparison_elevator_varia.image_data,
             ),
             comparison_method_to_use(
-                normalized_capture,
+                capture_type_to_use,
                 self.comparison_elevator_gravity.image_data,
             ),
         )
@@ -362,6 +379,12 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
 
     comparison_method_to_use = get_comparison_method_by_name(
         self.settings_dict["similarity_algorithm_tram"]
+    )
+
+    capture_type_to_use = (
+        normalized_capture
+        if self.settings_dict["similarity_use_normalized_capture_tram"]
+        else capture
     )
 
     self.similarity_to_tram = (
@@ -380,6 +403,12 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
         self.settings_dict["similarity_algorithm_teleportal"]
     )
 
+    capture_type_to_use = (
+        normalized_capture
+        if self.settings_dict["similarity_use_normalized_capture_teleportal"]
+        else capture
+    )
+
     self.similarity_to_teleportal = (
         max(
             comparison_method_to_use(capture, self.comparison_teleport_power.image_data),
@@ -391,6 +420,12 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
 
     comparison_method_to_use = get_comparison_method_by_name(
         self.settings_dict["similarity_algorithm_egg"]
+    )
+
+    capture_type_to_use = (
+        normalized_capture
+        if self.settings_dict["similarity_use_normalized_capture_egg"]
+        else capture
     )
 
     self.similarity_to_egg = (
@@ -424,6 +459,12 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
         self.settings_dict["similarity_algorithm_end_screen"]
     )
 
+    capture_type_to_use = (
+        normalized_capture
+        if self.settings_dict["similarity_use_normalized_capture_end_screen"]
+        else capture
+    )
+
     self.similarity_to_end_screen = (
         comparison_method_to_use(capture, self.comparison_end_screen.image_data) * 100
     )
@@ -433,7 +474,7 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
     )
 
 
-def update_labels(self):  # noqa: PLR0912
+def update_labels(self):  # noqa: PLR0912, PLR0915
     # Update title from target window or Capture Device name
     capture_region_window_label = (
         self.settings_dict["capture_device_name"]
@@ -443,7 +484,8 @@ def update_labels(self):  # noqa: PLR0912
     self.capture_region_window_label.setText(capture_region_window_label)
 
     self.image_black_label.setText(
-        f"Is screen black: {self.is_frame_black}," + f"current black level {self.black_level:.4f}%"
+        f"Current black level {self.black_level:.4f}, "
+        + f"threshold {self.settings_dict['black_threshold']}%  "
     )
 
     self.similarity_to_elevator_label.setText(
@@ -464,6 +506,11 @@ def update_labels(self):  # noqa: PLR0912
     self.similarity_to_egg_label.setText(
         f"Similarity to Itorash elevator image: ({self.similarity_to_egg:.4f}%, "
         + f"max {self.similarity_to_egg_max:.4f}%)"
+    )
+
+    self.similarity_to_end_screen_label.setText(
+        f"Similarity to end screen image: ({self.similarity_to_end_screen:.4f}%, "
+        + f"max {self.similarity_to_end_screen_max:.4f}%)"
     )
 
     if self.black_level < self.settings_dict["black_threshold"]:
@@ -491,30 +538,40 @@ def update_labels(self):  # noqa: PLR0912
     else:
         self.egg_indicator_label.setStyleSheet("background-color: red")
 
-    if self.active_load_type == "black":
-        self.black_load_indicator_label.setStyleSheet("background-color: green")
+    if self.similarity_to_end_screen > self.settings_dict["similarity_threshold_end_screen"]:
+        self.end_indicator_label.setStyleSheet("background-color: green")
     else:
-        self.black_load_indicator_label.setStyleSheet("background-color: red")
+        self.end_indicator_label.setStyleSheet("background-color: red")
+
+    if self.active_load_type == "black":
+        self.black_indicator_load_label.setStyleSheet("background-color: green")
+    else:
+        self.black_indicator_load_label.setStyleSheet("background-color: red")
 
     if self.active_load_type == "elevator":
-        self.elevator_indicator_ever_label.setStyleSheet("background-color: green")
+        self.elevator_indicator_load_label.setStyleSheet("background-color: green")
     else:
-        self.elevator_indicator_ever_label.setStyleSheet("background-color: red")
+        self.elevator_indicator_load_label.setStyleSheet("background-color: red")
 
     if self.active_load_type == "tram":
-        self.tram_indicator_ever_label.setStyleSheet("background-color: green")
+        self.tram_indicator_load_label.setStyleSheet("background-color: green")
     else:
-        self.tram_indicator_ever_label.setStyleSheet("background-color: red")
+        self.tram_indicator_load_label.setStyleSheet("background-color: red")
 
     if self.active_load_type == "teleportal":
-        self.teleportal_indicator_ever_label.setStyleSheet("background-color: green")
+        self.teleportal_indicator_load_label.setStyleSheet("background-color: green")
     else:
-        self.teleportal_indicator_ever_label.setStyleSheet("background-color: red")
+        self.teleportal_indicator_load_label.setStyleSheet("background-color: red")
 
     if self.active_load_type == "capsule":
-        self.egg_indicator_ever_label.setStyleSheet("background-color: green")
+        self.egg_indicator_load_label.setStyleSheet("background-color: green")
     else:
-        self.egg_indicator_ever_label.setStyleSheet("background-color: red")
+        self.egg_indicator_load_label.setStyleSheet("background-color: red")
+
+    if self.similarity_to_end_screen_max > self.settings_dict["similarity_threshold_end_screen"]:
+        self.end_indicator_ever_label.setStyleSheet("background-color: green")
+    else:
+        self.end_indicator_ever_label.setStyleSheet("background-color: red")
 
 
 def reset_statistics(self):
@@ -522,6 +579,7 @@ def reset_statistics(self):
     self.similarity_to_tram_max = 0.0
     self.similarity_to_teleportal_max = 0.0
     self.similarity_to_egg_max = 0.0
+    self.similarity_to_end_screen_max = 0.0
 
 
 def load_comparison_images(self):

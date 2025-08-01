@@ -11,7 +11,7 @@ import win32con
 import win32gui
 
 from capture_method.BitBltCaptureMethod import BitBltCaptureMethod
-from utils import GITHUB_REPOSITORY, get_window_bounds
+from utils import get_window_bounds
 
 if TYPE_CHECKING:
     from ZDCurtain import ZDCurtain
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class DesktopDuplicationCaptureMethod(BitBltCaptureMethod):
     name = "Direct3D Desktop Duplication"
     short_description = "slower, bound to display"
-    description = f"""
+    description = """
 Duplicates the desktop using Direct3D.
 It can record OpenGL and Hardware Accelerated windows.
 Up to 15x slower than BitBlt for tiny regions. Not affected by window size.
@@ -28,7 +28,7 @@ Limited by the target window and monitor's refresh rate.
 Overlapping windows will show up and can't record across displays.
 This option may not be available for hybrid GPU laptops,
 see D3DDD-Note-Laptops.md for a solution.
-https://www.github.com/{GITHUB_REPOSITORY}/blob/main/docs/D3DDD-Note-Laptops.md"""
+https://www.github.com/Toufool/AutoSplit/blob/main/docs/D3DDD-Note-Laptops.md"""
 
     def __init__(self, zdcurtain: "ZDCurtain"):
         super().__init__(zdcurtain)

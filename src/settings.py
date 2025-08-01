@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, cast
 from gen import settings as settings_ui
 from PySide6 import QtWidgets
 
+import user_profile
 from capture_method import (
     CAPTURE_METHODS,
     CameraInfo,
@@ -12,6 +13,7 @@ from capture_method import (
     get_all_video_capture_devices,
 )
 from hotkeys import HOTKEYS, set_hotkey
+from user_profile import DEFAULT_PROFILE
 from utils import ONE_SECOND, fire_and_forget
 
 if TYPE_CHECKING:
@@ -57,6 +59,8 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         match key:
             case "black_threshold":
                 self.__set_value("black_threshold", value)
+            case "load_confidence_threshold":
+                self.__set_value("load_confidence_threshold_ms", value)
             case "similarity_threshold_elevator":
                 self.__set_value("similarity_threshold_elevator", value)
             case "similarity_threshold_tram":
@@ -167,6 +171,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
 
         # Image Analysis Settings
         self.black_threshold_spinbox.setValue(self._zdcurtain_ref.settings_dict["black_threshold"])
+        self.load_confidence_threshold_spinbox.setValue(
+            self._zdcurtain_ref.settings_dict["load_confidence_threshold_ms"]
+        )
         self.elevator_similarity_spinbox.setValue(
             self._zdcurtain_ref.settings_dict["similarity_threshold_elevator"]
         )
@@ -201,6 +208,11 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 "black_threshold", self.black_threshold_spinbox.value()
             )
         )
+        self.load_confidence_threshold_spinbox.valueChanged.connect(
+            lambda: self.__update_default_threshold(
+                "load_confidence_threshold_ms", self.load_confidence_threshold_spinbox.value()
+            )
+        )
         self.elevator_similarity_spinbox.valueChanged.connect(
             lambda: self.__update_default_threshold(
                 "similarity_threshold_elevator", self.elevator_similarity_spinbox.value()
@@ -221,9 +233,64 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 "similarity_threshold_egg", self.egg_similarity_spinbox.value()
             )
         )
+
+        self.start_tracking_automatically_checkbox.stateChanged.connect(
+            lambda: self.__set_value(
+                "start_tracking_automatically",
+                self.start_tracking_automatically_checkbox.isChecked(),
+            )
+        )
         # endregion
 
 
 def open_settings(zdcurtain: "ZDCurtain"):
     if not zdcurtain.SettingsWidget or cast(QtWidgets.QWidget, zdcurtain.SettingsWidget).isHidden():
         zdcurtain.SettingsWidget = __SettingsWidget(zdcurtain)
+
+
+def get_default_settings_from_ui(zdcurtain: "ZDCurtain"):
+    temp_dialog = QtWidgets.QWidget()
+    default_settings_dialog = settings_ui.Ui_SettingsWidget()
+    default_settings_dialog.setupUi(temp_dialog)
+    default_settings: user_profile.UserProfileDict = {
+        "fps_limit": default_settings_dialog.fps_limit_spinbox.value(),
+        "live_capture_region": default_settings_dialog.live_capture_region_checkbox.isChecked(),
+        "capture_method": CAPTURE_METHODS.get_method_by_index(
+            default_settings_dialog.capture_method_combobox.currentIndex()
+        ),
+        "capture_device_id": default_settings_dialog.capture_device_combobox.currentIndex(),
+        "capture_device_name": "",
+        "captured_window_title": "",
+        "pause_hotkey": default_settings_dialog.pause_input.text(),
+        "start_tracking_automatically": default_settings_dialog.start_tracking_automatically_checkbox.isChecked(),
+        "black_threshold": default_settings_dialog.black_threshold_spinbox.value(),
+        "similarity_algorithm_elevator": DEFAULT_PROFILE["similarity_algorithm_elevator"],
+        "similarity_algorithm_tram": DEFAULT_PROFILE["similarity_algorithm_tram"],
+        "similarity_algorithm_teleportal": DEFAULT_PROFILE["similarity_algorithm_teleportal"],
+        "similarity_algorithm_egg": DEFAULT_PROFILE["similarity_algorithm_egg"],
+        "similarity_algorithm_end_screen": DEFAULT_PROFILE["similarity_algorithm_end_screen"],
+        "similarity_use_normalized_capture_elevator": DEFAULT_PROFILE[
+            "similarity_use_normalized_capture_elevator"
+        ],
+        "similarity_use_normalized_capture_tram": DEFAULT_PROFILE[
+            "similarity_use_normalized_capture_tram"
+        ],
+        "similarity_use_normalized_capture_teleportal": DEFAULT_PROFILE[
+            "similarity_use_normalized_capture_teleportal"
+        ],
+        "similarity_use_normalized_capture_egg": DEFAULT_PROFILE[
+            "similarity_use_normalized_capture_egg"
+        ],
+        "similarity_use_normalized_capture_end_screen": DEFAULT_PROFILE[
+            "similarity_use_normalized_capture_end_screen"
+        ],
+        "similarity_threshold_elevator": default_settings_dialog.elevator_similarity_spinbox.value(),
+        "similarity_threshold_tram": default_settings_dialog.tram_similarity_spinbox.value(),
+        "similarity_threshold_teleportal": default_settings_dialog.teleportal_similarity_spinbox.value(),
+        "similarity_threshold_egg": default_settings_dialog.egg_similarity_spinbox.value(),
+        "similarity_threshold_end_screen": default_settings_dialog.end_screen_similarity_spinbox.value(),
+        "load_confidence_threshold_ms": default_settings_dialog.load_confidence_threshold_spinbox.value(),
+        "capture_region": DEFAULT_PROFILE["capture_region"],
+    }
+    del temp_dialog
+    return default_settings
