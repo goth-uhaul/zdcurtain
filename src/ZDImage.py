@@ -58,20 +58,24 @@ class ZDImage:
                 sqrt(COMPARISON_RESIZE_AREA / cv2.countNonZero(image[:, :, ColorChannel.Alpha])),
             )
 
-            image = cv2.resize(
-                image,
-                dsize=None,
-                fx=scale,
-                fy=scale,
-                interpolation=cv2.INTER_NEAREST,
-            )
+            image = resize_image(image, None, scale, cv2.INTER_NEAREST)
 
             # Mask based on adaptively resized, nearest neighbor interpolated split image
             self.mask_data = cv2.inRange(image, MASK_LOWER_BOUND, MASK_UPPER_BOUND)
         else:
-            image = cv2.resize(image, COMPARISON_RESIZE, interpolation=cv2.INTER_NEAREST)
+            image = resize_image(image, COMPARISON_RESIZE, 1, cv2.INTER_NEAREST)
             # Add Alpha channel if missing
             if image.shape[ImageShape.Channels] == BGR_CHANNEL_COUNT:
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
 
         self.image_data = image
+
+
+def resize_image(image, size, scale, interpolation):
+    return cv2.resize(
+        image,
+        dsize=size,
+        fx=scale,
+        fy=scale,
+        interpolation=interpolation,
+    )

@@ -67,7 +67,7 @@ DEFAULT_PROFILE = UserProfileDict(
     similarity_threshold_egg=90,
     similarity_threshold_end_screen=98,
     load_confidence_threshold_ms=500,
-    capture_region=Region(x=0, y=0, width=1, height=1),
+    capture_region=Region(x=0, y=0, width=1920, height=1080),
 )
 
 

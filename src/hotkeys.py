@@ -1,4 +1,3 @@
-import sys
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal, cast
 
@@ -7,18 +6,7 @@ import pyautogui
 from PySide6 import QtWidgets
 
 import error_messages
-from utils import fire_and_forget, is_digit, try_input_device_access
-
-if sys.platform == "linux":
-    import grp
-    import os
-
-    groups = {grp.getgrgid(group).gr_name for group in os.getgroups()}
-    KEYBOARD_GROUPS_ISSUE = not {"input", "tty"}.issubset(groups)
-    KEYBOARD_UINPUT_ISSUE = not try_input_device_access()
-else:
-    KEYBOARD_GROUPS_ISSUE = False
-    KEYBOARD_UINPUT_ISSUE = False
+from utils import fire_and_forget, is_digit
 
 if TYPE_CHECKING:
     from ZDCurtain import ZDCurtain
@@ -30,13 +18,12 @@ SET_HOTKEY_TEXT = "Set Hotkey"
 PRESS_A_KEY_TEXT = "Press a key..."
 
 CommandStr = Literal["pause"]
-Hotkey = Literal["pause",]
+Hotkey = Literal["pause"]
 HOTKEYS = ("pause",)
 
 
 def remove_all_hotkeys():
-    if not KEYBOARD_GROUPS_ISSUE and not KEYBOARD_UINPUT_ISSUE:
-        keyboard.unhook_all()
+    keyboard.unhook_all()
 
 
 def before_setting_hotkey(zdcurtain: "ZDCurtain"):
@@ -110,7 +97,7 @@ def __validate_keypad(expected_key: str, keyboard_event: keyboard.KeyboardEvent)
 
     Since we reuse the key string we set to send to LiveSplit,
     we can't use fake names like "num home".
-    We're also trying to achieve the same hotkey behaviour that LiveSplit has.
+    We're also trying to achieve the same hotkey behaviour as LiveSplit has.
     """
     # Prevent "(keypad)delete", "(keypad)./decimal" and "del" from triggering each other
     # as well as "." and "(keypad)./decimal"
@@ -219,9 +206,6 @@ def __remove_key_already_set(zdcurtain: "ZDCurtain", key_name: str):
 
 
 def __get_hotkey_action(zdcurtain: "ZDCurtain", hotkey: Hotkey):
-    if hotkey == "pause":
-        return zdcurtain.pause_timer
-
     return getattr(zdcurtain, f"{hotkey}_signal").emit
 
 

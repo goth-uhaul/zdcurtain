@@ -40,6 +40,7 @@ from frame_analysis import (
     is_black,
     normalize_brightness_histogram,
 )
+from hotkeys import HOTKEYS, after_setting_hotkey, send_command
 from region_selection import select_window
 from settings import get_default_settings_from_ui, open_settings
 from user_profile import DEFAULT_PROFILE
@@ -54,11 +55,12 @@ from utils import (
     ms_to_ns,
     ns_to_ms,
 )
-from ZDImage import ZDImage
+from ZDImage import ZDImage, resize_image
 
 
 class ZDCurtain(QMainWindow, design.Ui_MainWindow):
     # Signals
+    pause_signal = QtCore.Signal()
     after_setting_hotkey_signal = QtCore.Signal()
     # Use this signal when trying to show an error from outside the main thread
     show_error_signal = QtCore.Signal(FunctionType)
@@ -80,6 +82,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         self.is_running = False
         self.is_tracking = False
+        self.is_load_being_removed = False
 
         self.screenshot_timer = 0
         self.screenshot_counter = 1
@@ -141,6 +144,10 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.setupUi(self)
         self.setWindowTitle(f"ZDCurtain v.{ZDCURTAIN_VERSION}")
 
+        # Hotkeys need to be initialized to be passed as thread arguments in hotkeys.py
+        for hotkey in HOTKEYS:
+            setattr(self, f"{hotkey}_hotkey", None)
+
         self.settings_dict = get_default_settings_from_ui(self)
 
         # connecting menu actions
@@ -151,6 +158,9 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.select_window_button.clicked.connect(lambda: select_window_and_start_tracking(self))
         self.reset_statistics_button.clicked.connect(lambda: reset_statistics(self))
         self.begin_end_tracking_button.clicked.connect(self.toggle_tracking)
+
+        # connect signals to functions
+        self.after_setting_hotkey_signal.connect(lambda: after_setting_hotkey(self))
 
         self.timer_frame_analysis.timeout.connect(
             lambda: self.__update_live_image_details(None, called_from_timer=True)
@@ -181,7 +191,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
                 return
 
             dim = (640, 360)
-            resized_capture = cv2.resize(capture, dim)
+            resized_capture = resize_image(capture, dim, 1, cv2.INTER_NEAREST)
 
             if self.is_tracking:
                 cropped_capture = get_top_third_of_capture(resized_capture)
@@ -220,6 +230,11 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
             f"Frame Time: {frame_time:.2f}, "
             + f"Last Black Screen Duration {self.last_black_screen_time}ms"
         )
+
+    """         self.analysis_status_label.setText(
+            f"pot: {self.potential_load_detected_at_timestamp}; con: "
+            + f" {self.confirmed_load_detected_at_timestamp}; lt: {self.active_load_type}"
+        ) """
 
     def toggle_tracking(self):
         self.is_tracking = not self.is_tracking
@@ -273,18 +288,20 @@ def is_end_screen(self, similarity, threshold):
 
 
 def check_if_load_ending(self):
-    if self.active_load_type == "none":
-        return
-
     if (
         self.black_screen_over_detected_at_timestamp > self.confirmed_load_detected_at_timestamp
         and perf_counter_ns() - self.black_screen_over_detected_at_timestamp
         > self.load_confidence_delta
+        and self.is_load_being_removed
     ):
+        send_command(self, "pause")
+
         self.active_load_type = "none"
         self.load_confidence_delta = 0
         self.potential_load_detected_at_timestamp = 0
         self.confirmed_load_detected_at_timestamp = 0
+
+        self.is_load_being_removed = False
 
 
 def perform_load_removal_logic(self):
@@ -304,7 +321,6 @@ def perform_load_removal_logic(self):
     ):
         self.confirmed_load_detected_at_timestamp = perf_counter_ns()
         self.active_load_type = "black"
-        # TODO: pause livesplit timer for black screen load
 
     if self.active_load_type in {"none", "black"}:
         if check_load_confidence(
@@ -332,6 +348,10 @@ def perform_load_removal_logic(self):
             self.settings_dict["similarity_threshold_egg"],
         ):
             self.active_load_type = "capsule"
+
+    if not self.is_load_being_removed and self.active_load_type != "none":
+        send_command(self, "pause")
+        self.is_load_being_removed = True
 
     check_if_load_ending(self)
 
@@ -389,12 +409,24 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
 
     self.similarity_to_tram = (
         max(
-            comparison_method_to_use(capture, self.comparison_train_left_power.image_data),
-            comparison_method_to_use(capture, self.comparison_train_left_varia.image_data),
-            comparison_method_to_use(capture, self.comparison_train_left_gravity.image_data),
-            comparison_method_to_use(capture, self.comparison_train_right_power.image_data),
-            comparison_method_to_use(capture, self.comparison_train_right_varia.image_data),
-            comparison_method_to_use(capture, self.comparison_train_right_gravity.image_data),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_train_left_power.image_data
+            ),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_train_left_varia.image_data
+            ),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_train_left_gravity.image_data
+            ),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_train_right_power.image_data
+            ),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_train_right_varia.image_data
+            ),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_train_right_gravity.image_data
+            ),
         )
         * 100
     )
@@ -411,9 +443,15 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
 
     self.similarity_to_teleportal = (
         max(
-            comparison_method_to_use(capture, self.comparison_teleport_power.image_data),
-            comparison_method_to_use(capture, self.comparison_teleport_varia.image_data),
-            comparison_method_to_use(capture, self.comparison_teleport_gravity.image_data),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_teleport_power.image_data
+            ),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_teleport_varia.image_data
+            ),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_teleport_gravity.image_data
+            ),
         )
         * 100
     )
@@ -430,9 +468,11 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
 
     self.similarity_to_egg = (
         max(
-            comparison_method_to_use(capture, self.comparison_capsule_power.image_data),
-            comparison_method_to_use(capture, self.comparison_capsule_varia.image_data),
-            comparison_method_to_use(capture, self.comparison_capsule_gravity.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_capsule_power.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_capsule_varia.image_data),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_capsule_gravity.image_data
+            ),
         )
         * 100
     )
@@ -448,9 +488,11 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
 
     self.similarity_to_egg = (
         max(
-            comparison_method_to_use(capture, self.comparison_capsule_power.image_data),
-            comparison_method_to_use(capture, self.comparison_capsule_varia.image_data),
-            comparison_method_to_use(capture, self.comparison_capsule_gravity.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_capsule_power.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_capsule_varia.image_data),
+            comparison_method_to_use(
+                capture_type_to_use, self.comparison_capsule_gravity.image_data
+            ),
         )
         * 100
     )
@@ -466,7 +508,7 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
     )
 
     self.similarity_to_end_screen = (
-        comparison_method_to_use(capture, self.comparison_end_screen.image_data) * 100
+        comparison_method_to_use(capture_type_to_use, self.comparison_end_screen.image_data) * 100
     )
 
     self.similarity_to_end_screen_max = max(
