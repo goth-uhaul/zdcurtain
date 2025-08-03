@@ -27,12 +27,13 @@ from typing import NoReturn, override
 
 import cv2
 from cv2.typing import MatLike
-from gen import design, settings
+from gen import about, design, settings
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
 
 import error_messages
 import user_profile
+from about import open_about
 from capture_method import CaptureMethodBase, CaptureMethodEnum
 from frame_analysis import (
     get_comparison_method_by_name,
@@ -72,6 +73,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
     timer_frame_analysis.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
 
     SettingsWidget: settings.Ui_SettingsWidget | None = None
+    AboutWidget: about.Ui_AboutAutoSplitWidget | None = None
 
     def __init__(self):  # noqa: PLR0915 constructor
         super().__init__()
@@ -152,6 +154,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         # connecting menu actions
         self.action_settings.triggered.connect(lambda: open_settings(self))
+        self.action_about.triggered.connect(lambda: open_about(self))
         self.action_exit.triggered.connect(lambda: self.closeEvent())  # noqa: PLW0108
 
         # connecting button clicks to functions

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <author>Toufool</author>
+ <class>AboutAutoSplitWidget</class>
+ <widget class="QWidget" name="AboutAutoSplitWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>264</width>
+    <height>250</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>264</width>
+    <height>250</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>264</width>
+    <height>250</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <pointsize>9</pointsize>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>About AutoSplit</string>
+  </property>
+  <widget class="QPushButton" name="ok_button">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>220</y>
+     <width>75</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>OK</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="created_by_label">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>84</y>
+     <width>224</width>
+     <height>121</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Created by &lt;a href=&quot;https://bsky.app/profile/jayena.hijumpboots.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;jay&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Special Thanks to: &lt;/p&gt;&lt;p&gt;may_berry, Arcanox, and Vale&lt;/p&gt;&lt;p&gt;Based on &lt;a href=&quot;https://github.com/Toufool/AutoSplit&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;AutoSplit&lt;/span&gt;&lt;/a&gt; by Toufool, Faschz, and Avasam.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="program_name_label">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>21</y>
+     <width>261</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>ZDCurtain Load Remover</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="version_label">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>46</y>
+     <width>261</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>9</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>v. 0.0.0</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <zorder>program_name_label</zorder>
+  <zorder>created_by_label</zorder>
+  <zorder>ok_button</zorder>
+  <zorder>version_label</zorder>
+ </widget>
+ <connections>
+  <connection>
+   <sender>ok_button</sender>
+   <signal>clicked()</signal>
+   <receiver>AboutAutoSplitWidget</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>225</x>
+     <y>210</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>153</x>
+     <y>114</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

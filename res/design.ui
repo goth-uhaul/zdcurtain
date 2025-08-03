@@ -76,30 +76,11 @@
      <string>Select Window...</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="select_region_button">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>660</x>
-      <y>50</y>
-      <width>144</width>
-      <height>36</height>
-     </rect>
-    </property>
-    <property name="focusPolicy">
-     <enum>Qt::FocusPolicy::NoFocus</enum>
-    </property>
-    <property name="text">
-     <string>Select Screen Region...</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="select_device_button">
     <property name="geometry">
      <rect>
       <x>660</x>
-      <y>90</y>
+      <y>50</y>
       <width>144</width>
       <height>36</height>
      </rect>
@@ -930,7 +911,7 @@
     <property name="geometry">
      <rect>
       <x>660</x>
-      <y>131</y>
+      <y>90</y>
       <width>144</width>
       <height>36</height>
      </rect>
