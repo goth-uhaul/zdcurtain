@@ -32,7 +32,6 @@ from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QApplication, QLabel, QMainWindow
 
 import error_messages
-import user_profile
 from about import open_about
 from capture_method import CaptureMethodBase, CaptureMethodEnum
 from frame_analysis import (
@@ -44,7 +43,13 @@ from frame_analysis import (
 from hotkeys import HOTKEYS, after_setting_hotkey, send_command
 from region_selection import select_window
 from settings import get_default_settings_from_ui, open_settings
-from user_profile import DEFAULT_PROFILE
+from user_profile import (
+    DEFAULT_PROFILE,
+    load_settings,
+    load_settings_on_open,
+    save_settings,
+    save_settings_as,
+)
 from utils import (
     BGRA_CHANNEL_COUNT,
     FROZEN,
@@ -64,6 +69,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
     # Signals
     pause_signal = QtCore.Signal()
     after_setting_hotkey_signal = QtCore.Signal()
+    reload_start_image_signal = QtCore.Signal(bool, bool)
     # Use this signal when trying to show an error from outside the main thread
     show_error_signal = QtCore.Signal(FunctionType)
 
@@ -82,6 +88,9 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.hwnd = 0
         self.last_saved_settings = deepcopy(DEFAULT_PROFILE)
         self.capture_method = CaptureMethodBase(self)
+
+        self.last_successfully_loaded_settings_file_path = ""
+        """Path of the settings file to default to. `None` until we try to load once."""
 
         self.is_running = False
         self.is_tracking = False
@@ -155,11 +164,15 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         # connecting menu actions
         self.action_settings.triggered.connect(lambda: open_settings(self))
+        self.action_save_settings.triggered.connect(lambda: save_settings(self))
+        self.action_save_settings_as.triggered.connect(lambda: save_settings_as(self))
+        self.action_load_settings.triggered.connect(lambda: load_settings(self))
         self.action_about.triggered.connect(lambda: open_about(self))
         self.action_exit.triggered.connect(lambda: self.closeEvent())  # noqa: PLW0108
 
         # connecting button clicks to functions
         self.select_window_button.clicked.connect(lambda: select_window_and_start_tracking(self))
+        self.select_device_button.clicked.connect(lambda: open_settings(self))
         self.reset_statistics_button.clicked.connect(lambda: reset_statistics(self))
         self.begin_end_tracking_button.clicked.connect(self.toggle_tracking)
 
@@ -174,7 +187,26 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         self.show()
 
-        user_profile.load_settings_on_open(self)
+        load_settings_on_open(self)
+
+    def __try_to_recover_capture(self):
+        capture = None
+
+        # Try to recover by using the window name
+        if self.settings_dict["capture_method"] == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE:
+            self.live_image.setText("Waiting for capture device...")
+        else:
+            message = "Trying to recover window..."
+            if self.settings_dict["capture_method"] == CaptureMethodEnum.BITBLT:
+                message += "\n(captured window may be incompatible with BitBlt)"
+            self.live_image.setText(message)
+            recovered = self.capture_method.recover_window(
+                self.settings_dict["captured_window_title"]
+            )
+            if recovered:
+                capture = self.capture_method.get_frame()
+
+        return capture
 
     def __update_live_image_details(
         self,
@@ -191,34 +223,34 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
             capture = self.capture_method.get_frame()
 
-            if not is_valid_image(capture):
-                return
+            if is_valid_image(capture):
+                dim = (640, 360)
+                resized_capture = resize_image(capture, dim, 1, cv2.INTER_NEAREST)
 
-            dim = (640, 360)
-            resized_capture = resize_image(capture, dim, 1, cv2.INTER_NEAREST)
+                if self.settings_dict["live_capture_region"]:
+                    set_preview_image(self.live_image, capture)
 
-            if self.is_tracking:
-                cropped_capture = get_top_third_of_capture(resized_capture)
-                normalized_capture = normalize_brightness_histogram(resized_capture)
+                if self.is_tracking:
+                    cropped_capture = get_top_third_of_capture(resized_capture)
+                    normalized_capture = normalize_brightness_histogram(resized_capture)
 
-                perform_black_level_analysis(self, cropped_capture)
-                perform_similarity_analysis(self, resized_capture, normalized_capture)
-                perform_load_removal_logic(self)
+                    perform_black_level_analysis(self, cropped_capture)
+                    perform_similarity_analysis(self, resized_capture, normalized_capture)
+                    perform_load_removal_logic(self)
 
-                if is_end_screen(self, self.similarity_to_end_screen, 98):
-                    # stop tracking
-                    self.toggle_tracking()
+                    if is_end_screen(self, self.similarity_to_end_screen, 98):
+                        # stop tracking
+                        self.toggle_tracking()
 
-            if self.screenshot_timer >= 60:
-                # imwrite(f"sshot/sshot_{self.screenshot_counter}.png", normalized_capture)
-                self.screenshot_counter += 1
+                if self.screenshot_timer >= 60:
+                    # imwrite(f"sshot/sshot_{self.screenshot_counter}.png", normalized_capture)
+                    self.screenshot_counter += 1
 
-            self.screenshot_timer += 1
+                self.screenshot_timer += 1
+            else:
+                return  # self.__try_to_recover_capture()
 
         update_labels(self)
-
-        if self.settings_dict["live_capture_region"]:
-            set_preview_image(self.live_image, resized_capture)
 
         frame_end_time = perf_counter_ns()
 

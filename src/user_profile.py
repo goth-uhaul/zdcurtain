@@ -1,7 +1,17 @@
-from typing import TYPE_CHECKING, NoReturn, TypedDict, override
+import os
+import tomllib
+from copy import deepcopy
+from typing import TYPE_CHECKING, NoReturn, TypedDict, cast, override
 from warnings import deprecated
 
+import tomli_w
+from PySide6 import QtWidgets
+
+import error_messages
+import settings
 from capture_method import CAPTURE_METHODS, CaptureMethodEnum, Region, change_capture_method
+from hotkeys import HOTKEYS, Hotkey, remove_all_hotkeys, set_hotkey
+from utils import working_directory
 
 if TYPE_CHECKING:
     from ZDCurtain import ZDCurtain
@@ -67,10 +77,137 @@ DEFAULT_PROFILE = UserProfileDict(
     similarity_threshold_egg=90,
     similarity_threshold_end_screen=98,
     load_confidence_threshold_ms=500,
-    capture_region=Region(x=0, y=0, width=1920, height=1080),
+    capture_region=Region(x=0, y=0, width=1, height=1),
 )
 
 
+def have_settings_changed(zdcurtain: "ZDCurtain"):
+    return zdcurtain.settings_dict != zdcurtain.last_saved_settings
+
+
+def save_settings(zdcurtain: "ZDCurtain"):
+    """@return: The save settings filepath. Or None if "Save Settings As" is cancelled."""
+    return (
+        __save_settings_to_file(zdcurtain, zdcurtain.last_successfully_loaded_settings_file_path)
+        if zdcurtain.last_successfully_loaded_settings_file_path
+        else save_settings_as(zdcurtain)
+    )
+
+
+def save_settings_as(zdcurtain: "ZDCurtain"):
+    """@return: The save settings filepath selected. Empty if cancelled."""
+    # User picks save destination
+    save_settings_file_path = QtWidgets.QFileDialog.getSaveFileName(
+        zdcurtain,
+        "Save Settings As",
+        zdcurtain.last_successfully_loaded_settings_file_path
+        or os.path.join(working_directory, "settings.toml"),
+        "TOML (*.toml)",
+    )[0]
+
+    # If user cancels save destination window, don't save settings
+    if not save_settings_file_path:
+        return ""
+
+    return __save_settings_to_file(zdcurtain, save_settings_file_path)
+
+
+def __save_settings_to_file(zdcurtain: "ZDCurtain", save_settings_file_path: str):
+    # Save settings to a .toml file
+    with open(save_settings_file_path, "wb") as file:
+        tomli_w.dump(zdcurtain.settings_dict, file)
+    zdcurtain.last_saved_settings = deepcopy(zdcurtain.settings_dict)
+    zdcurtain.last_successfully_loaded_settings_file_path = save_settings_file_path
+    return save_settings_file_path
+
+
+def __load_settings_from_file(zdcurtain: "ZDCurtain", load_settings_file_path: str):
+    # Allow seamlessly reloading the entire settings widget
+    settings_widget_was_open = False
+    settings_widget = cast(QtWidgets.QWidget | None, zdcurtain.SettingsWidget)
+    if settings_widget:
+        settings_widget_was_open = settings_widget.isVisible()
+        settings_widget.close()
+
+    try:
+        with open(load_settings_file_path, mode="rb") as file:
+            # Casting here just so we can build an actual UserProfileDict once we're done validating
+            # Fallback to default settings if some are missing from the file.
+            # This happens when new settings are added.
+            loaded_settings = DEFAULT_PROFILE | cast(UserProfileDict, tomllib.load(file))
+
+        # TODO: Data Validation / fallbacks ?
+        zdcurtain.settings_dict = UserProfileDict(**loaded_settings)
+        zdcurtain.last_saved_settings = deepcopy(zdcurtain.settings_dict)
+    except (FileNotFoundError, MemoryError, TypeError, tomllib.TOMLDecodeError):
+        zdcurtain.show_error_signal.emit(error_messages.invalid_settings)
+        return False
+
+    remove_all_hotkeys()
+    for hotkey, hotkey_name in ((hotkey, f"{hotkey}_hotkey") for hotkey in HOTKEYS):
+        hotkey_value = zdcurtain.settings_dict.get(hotkey_name)
+        if hotkey_value:
+            # cast caused by a regression in pyright 1.1.365
+            set_hotkey(zdcurtain, cast(Hotkey, hotkey), hotkey_value)
+
+    change_capture_method(
+        cast(CaptureMethodEnum, zdcurtain.settings_dict["capture_method"]),
+        zdcurtain,
+    )
+
+    if zdcurtain.settings_dict["capture_method"] != CaptureMethodEnum.VIDEO_CAPTURE_DEVICE:
+        zdcurtain.capture_method.recover_window(zdcurtain.settings_dict["captured_window_title"])
+    if not zdcurtain.capture_method.check_selected_region_exists():
+        zdcurtain.live_image.setText(
+            "Reload settings after opening"
+            + f"\n{zdcurtain.settings_dict['captured_window_title']!r}"
+            + "\nto automatically load Capture Region"
+        )
+
+    if settings_widget_was_open:
+        settings.open_settings(zdcurtain)
+
+    return True
+
+
+def load_settings(zdcurtain: "ZDCurtain", from_path: str = ""):
+    load_settings_file_path = (
+        from_path
+        or QtWidgets.QFileDialog.getOpenFileName(
+            zdcurtain,
+            "Load Profile",
+            os.path.join(working_directory, "settings.toml"),
+            "TOML (*.toml)",
+        )[0]
+    )
+    if not (
+        load_settings_file_path  # fmt: skip
+        and __load_settings_from_file(zdcurtain, load_settings_file_path)
+    ):
+        return
+
+    zdcurtain.last_successfully_loaded_settings_file_path = load_settings_file_path
+    # TODO: Should this check be in `__load_start_image` ?
+    if not zdcurtain.is_running:
+        zdcurtain.reload_start_image_signal.emit(False, True)
+
+
 def load_settings_on_open(zdcurtain: "ZDCurtain"):
-    # TODO: replace with https://github.com/Toufool/AutoSplit/blob/main/src/user_profile.py#L205
-    change_capture_method(CAPTURE_METHODS.get_method_by_index(0), zdcurtain)
+    settings_files = [
+        file  # fmt: skip
+        for file in os.listdir(working_directory)
+        if file.endswith(".toml")
+    ]
+
+    # Find all .tomls in ZDCurtain folder, error if there is not exactly 1
+    error = None
+    if len(settings_files) < 1:
+        error = error_messages.no_settings_file_on_open
+    elif len(settings_files) > 1:
+        error = error_messages.too_many_settings_files_on_open
+    if error:
+        change_capture_method(CAPTURE_METHODS.get_method_by_index(0), zdcurtain)
+        error()
+        return
+
+    load_settings(zdcurtain, os.path.join(working_directory, settings_files[0]))

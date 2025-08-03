@@ -60,6 +60,24 @@ def already_open():
     )
 
 
+def invalid_settings():
+    set_text_message("Invalid settings file.")
+
+
+def no_settings_file_on_open():
+    set_text_message(
+        "No settings file found. "
+        + "One can be loaded on open if placed in the same folder as the ZDCurtain executable."
+    )
+
+
+def too_many_settings_files_on_open():
+    set_text_message(
+        "Too many settings files found. "
+        + "Only one can be loaded on open if placed in the same folder as the ZDCurtain executable."
+    )
+
+
 def region():
     set_text_message(
         "No region is selected or the Capture Region window is not open. "

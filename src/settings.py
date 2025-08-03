@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, cast
 from gen import settings as settings_ui
 from PySide6 import QtWidgets
 
-import user_profile
 from capture_method import (
     CAPTURE_METHODS,
     CameraInfo,
@@ -13,7 +12,7 @@ from capture_method import (
     get_all_video_capture_devices,
 )
 from hotkeys import HOTKEYS, set_hotkey
-from user_profile import DEFAULT_PROFILE
+from user_profile import DEFAULT_PROFILE, UserProfileDict
 from utils import ONE_SECOND, fire_and_forget
 
 if TYPE_CHECKING:
@@ -245,7 +244,7 @@ def get_default_settings_from_ui(zdcurtain: "ZDCurtain"):
     temp_dialog = QtWidgets.QWidget()
     default_settings_dialog = settings_ui.Ui_SettingsWidget()
     default_settings_dialog.setupUi(temp_dialog)
-    default_settings: user_profile.UserProfileDict = {
+    default_settings: UserProfileDict = {
         "fps_limit": default_settings_dialog.fps_limit_spinbox.value(),
         "live_capture_region": default_settings_dialog.live_capture_region_checkbox.isChecked(),
         "capture_method": CAPTURE_METHODS.get_method_by_index(
