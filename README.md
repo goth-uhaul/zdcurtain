@@ -44,7 +44,7 @@ ZDCurtain is compatible with Windows 10 and 11.
 
 # Credits
 
-- Created by jay using code and concepts from [AutoSplit](https://github.com/Toufool/AutoSplit)
-- may_berry for the icon, Dread system knowledge, and LiveSplit usage knowledge
-- Arcanox for the confidence plateau algorithm advice
-- Vale for creating masks and for testing
+- Created by [jay](https://bsky.app/profile/jayena.hijumpboots.com) using code and concepts from [AutoSplit](https://github.com/Toufool/AutoSplit)
+- [may_berry](https://bsky.app/profile/mayberryzoom.bsky.social) for the icon, Dread system knowledge, and LiveSplit usage knowledge
+- [Arcanox](https://bsky.app/profile/arcanox.me) for the confidence plateau algorithm advice
+- [Vale](https://bsky.app/profile/valefor-m.bsky.social) for creating masks and for testing support
