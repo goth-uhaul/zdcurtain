@@ -55,6 +55,7 @@ from utils import (
     list_processes,
     ms_to_ns,
     ns_to_ms,
+    resource_path,
 )
 from ZDImage import ZDImage, resize_image
 
@@ -667,7 +668,7 @@ def load_comparison_images(self):
 
 
 def read_and_format_image(filename):
-    return ZDImage(filename)
+    return ZDImage(resource_path(filename))
 
 
 def set_preview_image(qlabel: QLabel, image: MatLike | None):
