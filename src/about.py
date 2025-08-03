@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from ZDCurtain import ZDCurtain
 
 
-class __AboutWidget(QtWidgets.QWidget, about.Ui_AboutAutoSplitWidget):
+class __AboutWidget(QtWidgets.QWidget, about.Ui_AboutZDCurtainWidget):
     """About Window."""
 
     def __init__(self):

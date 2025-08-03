@@ -37,20 +37,13 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         self.setFocus()
 
         # region Build the Capture method combobox  # fmt: skip
-
         capture_method_values = CAPTURE_METHODS.values()
         self.__set_all_capture_devices()
-
         self.capture_method_combobox.addItems([
             f"- {method.name} ({method.short_description})" for method in capture_method_values
         ])
-        self.capture_method_combobox.setToolTip(
-            "\n\n".join(
-                f"{method.name} :\n{method.description}" for method in capture_method_values
-            )
-        )
-        # endregion
 
+        build_documentation(self)
         self.__setup_bindings()
 
         self.show()
@@ -294,3 +287,113 @@ def get_default_settings_from_ui(zdcurtain: "ZDCurtain"):
     }
     del temp_dialog
     return default_settings
+
+
+def build_documentation(self):
+    # Build tooltip instructions  # fmt: skip
+    fps_limit_tooltip = (
+        "Limit how fast image analysis runs. Higher values will \n"
+        + "provide more accurate load removal at the expense of more \n"
+        + "processing power."
+    )
+
+    self.fps_limit_label.setToolTip(fps_limit_tooltip)
+    self.fps_limit_spinbox.setToolTip(fps_limit_tooltip)
+
+    live_capture_region_tooltip = "Show or hide the live capture region."
+
+    self.live_capture_region_checkbox.setToolTip(live_capture_region_tooltip)
+
+    capture_method_values = CAPTURE_METHODS.values()
+    capture_method_tooltip = "\n\n".join(
+        f"{method.name} :\n{method.description}" for method in capture_method_values
+    )
+
+    self.capture_method_label.setToolTip(capture_method_tooltip)
+    self.capture_method_combobox.setToolTip(capture_method_tooltip)
+
+    black_threshold_tooltip = (
+        "Tolerance for black screen loads. The lower the value, the\n"
+        + "closer the screen needs to be to pure black for ZDCurtain\n"
+        + "to recognize the load."
+    )
+
+    self.black_threshold_label.setToolTip(black_threshold_tooltip)
+    self.black_threshold_spinbox.setToolTip(black_threshold_tooltip)
+
+    load_confidence_threshold_tooltip = (
+        "Threshold in milliseconds for ZDCurtain to recognize an area\n"
+        + "load as eligible for load removal. The load must clear the\n"
+        + "similarity thresholds below for at least this long in order\n"
+        + "for the load to be removed.\n\n"
+        + "When the load is removed, ZDCurtain will wait to unpause\n"
+        + "the timer in order to cover the amount of time that elapsed\n"
+        + "between when the load started and when it was detected."
+    )
+
+    self.load_confidence_threshold_label.setToolTip(load_confidence_threshold_tooltip)
+    self.load_confidence_threshold_spinbox.setToolTip(load_confidence_threshold_tooltip)
+
+    elevator_similarity_tooltip = (
+        "Tolerance for elevator loads. If the similarity value exceeds\n"
+        + "this value for longer than the transition load threshold,\n"
+        + "an elevator load will be recognized."
+    )
+
+    self.elevator_similarity_label.setToolTip(elevator_similarity_tooltip)
+    self.elevator_similarity_spinbox.setToolTip(elevator_similarity_tooltip)
+
+    tram_similarity_tooltip = (
+        "Tolerance for tram / train loads. If the similarity value exceeds\n"
+        + "this value for longer than the transition load threshold,\n"
+        + "a tram / train load will be recognized."
+    )
+
+    self.tram_similarity_label.setToolTip(tram_similarity_tooltip)
+    self.tram_similarity_spinbox.setToolTip(tram_similarity_tooltip)
+
+    teleportal_similarity_tooltip = (
+        "Tolerance for teleportal loads. If the similarity value exceeds\n"
+        + "this value for longer than the transition load threshold,\n"
+        + "a teleportal load will be recognized."
+    )
+
+    self.teleportal_similarity_label.setToolTip(teleportal_similarity_tooltip)
+    self.teleportal_similarity_spinbox.setToolTip(teleportal_similarity_tooltip)
+
+    egg_similarity_tooltip = (
+        "Tolerance for the Itorash capsule load. If the similarity value\n"
+        + "exceeds this value for longer than the transition load\n"
+        + " threshold, an Itorash capsule load will be recognized."
+    )
+
+    self.egg_similarity_label.setToolTip(egg_similarity_tooltip)
+    self.egg_similarity_spinbox.setToolTip(egg_similarity_tooltip)
+
+    end_screen_similarity_tooltip = (
+        "Tolerance for the screen where Samus runs to her ship.\n"
+        + "If the similarity value exceeds this value at any point\n"
+        + "in the run, ZDCurtain will stop tracking loads."
+    )
+
+    self.end_screen_similarity_label.setToolTip(end_screen_similarity_tooltip)
+    self.end_screen_similarity_spinbox.setToolTip(end_screen_similarity_tooltip)
+
+    pause_hotkey_tooltip = (
+        "Pauses and unpauses your timer. Set this to the same key\n"
+        + "as you use in your speedrun timer (LiveSplit, etc).\n\n"
+        + 'Note for LiveSplit users: "Double Tap Prevention" MUST\n'
+        + "be UNCHECKED in order for the load remover to work!"
+    )
+
+    self.pause_label.setToolTip(pause_hotkey_tooltip)
+    self.pause_input.setToolTip(pause_hotkey_tooltip)
+    self.set_pause_hotkey_button.setToolTip(pause_hotkey_tooltip)
+
+    start_tracking_automatically_tooltip = (
+        "If this box is checked, ZDCurtain will automatically start\n"
+        + "tracking loads as soon as a capture source is loaded."
+    )
+
+    self.start_tracking_automatically_checkbox.setToolTip(start_tracking_automatically_tooltip)
+    # endregion

@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <author>Toufool</author>
- <class>AboutAutoSplitWidget</class>
- <widget class="QWidget" name="AboutAutoSplitWidget">
+ <class>AboutZDCurtainWidget</class>
+ <widget class="QWidget" name="AboutZDCurtainWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>264</width>
-    <height>250</height>
+    <width>595</width>
+    <height>263</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>264</width>
-    <height>250</height>
+    <width>595</width>
+    <height>263</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>264</width>
-    <height>250</height>
+    <width>595</width>
+    <height>263</height>
    </size>
   </property>
   <property name="font">
@@ -29,13 +29,13 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string>About AutoSplit</string>
+   <string>About ZDCurtain</string>
   </property>
   <widget class="QPushButton" name="ok_button">
    <property name="geometry">
     <rect>
-     <x>180</x>
-     <y>220</y>
+     <x>510</x>
+     <y>230</y>
      <width>75</width>
      <height>24</height>
     </rect>
@@ -48,13 +48,13 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>84</y>
+     <y>70</y>
      <width>224</width>
-     <height>121</height>
+     <height>131</height>
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Created by &lt;a href=&quot;https://bsky.app/profile/jayena.hijumpboots.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;jay&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Special Thanks to: &lt;/p&gt;&lt;p&gt;may_berry, Arcanox, and Vale&lt;/p&gt;&lt;p&gt;Based on &lt;a href=&quot;https://github.com/Toufool/AutoSplit&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;AutoSplit&lt;/span&gt;&lt;/a&gt; by Toufool, Faschz, and Avasam.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Created by &lt;a href=&quot;https://bsky.app/profile/jayena.hijumpboots.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;jay&lt;/span&gt;&lt;/a&gt; for the &lt;a href=&quot;https://discord.gg/metroid-dread-speedrunning-855892393048014858&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;Metroid Dread Speedrunning Community&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Special Thanks to: &lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://bsky.app/profile/mayberryzoom.bsky.social&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;may_berry&lt;/span&gt;&lt;/a&gt;, &lt;a href=&quot;https://bsky.app/profile/arcanox.me&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;Arcanox&lt;/span&gt;&lt;/a&gt;, and &lt;a href=&quot;https://bsky.app/profile/valefor-m.bsky.social&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;Vale&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Based on &lt;a href=&quot;https://github.com/Toufool/AutoSplit&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;AutoSplit&lt;/span&gt;&lt;/a&gt; by Toufool, Faschz, and Avasam.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -67,8 +67,8 @@
    <property name="geometry">
     <rect>
      <x>0</x>
-     <y>21</y>
-     <width>261</width>
+     <y>10</y>
+     <width>611</width>
      <height>20</height>
     </rect>
    </property>
@@ -88,10 +88,22 @@
    <property name="geometry">
     <rect>
      <x>0</x>
-     <y>46</y>
-     <width>261</width>
+     <y>36</y>
+     <width>611</width>
      <height>20</height>
     </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>611</width>
+     <height>20</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>611</width>
+     <height>20</height>
+    </size>
    </property>
    <property name="font">
     <font>
@@ -105,16 +117,133 @@
     <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>264</x>
+     <y>60</y>
+     <width>321</width>
+     <height>161</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Packages</string>
+   </property>
+   <widget class="QListWidget" name="package_list_widget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>301</width>
+      <height>121</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>keyboard</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>opencv-contrib-python-headless</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>pyautogui</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>pygrabber</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>pyinstaller</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>pyside6-essentials</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>pywin32</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>pywinctl</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>tomli-w</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>typed-d3dshot</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>winrt-windows-foundation</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>winrt-windows-graphics</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>winrt-windows-graphics-capture</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>winrt-windows-graphics-capture-interop</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>winrt-windows-graphics-directx</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>winrt-windows-graphics-directx-direct3d11</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>winrt-windows-graphics-directx-direct3d11-interop</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>winrt-windows-graphics-imaging</string>
+     </property>
+    </item>
+   </widget>
+  </widget>
   <zorder>program_name_label</zorder>
   <zorder>created_by_label</zorder>
   <zorder>ok_button</zorder>
   <zorder>version_label</zorder>
+  <zorder>groupBox</zorder>
  </widget>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>ok_button</sender>
    <signal>clicked()</signal>
-   <receiver>AboutAutoSplitWidget</receiver>
+   <receiver>AboutZDCurtainWidget</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">

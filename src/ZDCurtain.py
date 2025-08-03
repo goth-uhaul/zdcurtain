@@ -73,7 +73,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
     timer_frame_analysis.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
 
     SettingsWidget: settings.Ui_SettingsWidget | None = None
-    AboutWidget: about.Ui_AboutAutoSplitWidget | None = None
+    AboutWidget: about.Ui_AboutZDCurtainWidget | None = None
 
     def __init__(self):  # noqa: PLR0915 constructor
         super().__init__()
@@ -717,6 +717,8 @@ def main():
     # Call to QApplication outside the try-except so we can show error messages
     app = QApplication(sys.argv)
     try:
+        app.setWindowIcon(QtGui.QIcon(":/resources/icon.ico"))
+
         if is_already_open():
             error_messages.already_open()
 
