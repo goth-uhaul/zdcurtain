@@ -114,6 +114,13 @@ def ns_to_ms(ns):
     return ns / 1000000
 
 
+def ms_to_msms(ms):
+    seconds, milliseconds = divmod(ms, 1000)
+    minutes, seconds = divmod(seconds, 60)
+
+    return (minutes, seconds, milliseconds)
+
+
 def decimal(value: float):
     # Using ljust instead of :2f because of python float rounding errors
     return f"{int(value * 100) / 100}".ljust(4, "0")

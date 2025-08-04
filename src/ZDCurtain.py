@@ -58,6 +58,7 @@ from utils import (
     ZDCURTAIN_VERSION,
     is_valid_image,
     list_processes,
+    ms_to_msms,
     ms_to_ns,
     ns_to_ms,
     resource_path,
@@ -263,6 +264,12 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
             f"Frame Time: {frame_time:.2f}, "
             + f"Last Black Screen Duration {self.last_black_screen_time}ms, "
             + f"TLTR: {self.load_time_removed_ms:.2f}ms"
+        )
+
+        tltr_m, tltr_s, tltr_ms = ms_to_msms(self.load_time_removed_ms)
+
+        self.total_load_time_removed_label.setText(
+            f"Total Load Time Removed: {tltr_m:.0f}m {tltr_s:.0f}s {tltr_ms:.0f}ms"
         )
 
     """         self.analysis_status_label.setText(
