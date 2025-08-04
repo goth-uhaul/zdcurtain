@@ -20,7 +20,7 @@ ZDCurtain works by comparing a screen capture of the game to common comparison i
 ZDCurtain eliminates:
 
 - Area transition load times (elevator, tram / train, teleportal, Itorash capsule)
-- Black screen load times caused by moving from one room to another, as long as the black screen exists for at least 116 milliseconds
+- Black screen load times caused by moving from one room to another, as long as the black screen exists for at least 100 milliseconds
 - Load times that occur during hint screens (for example, when first loading the game or when reloading after returning to a checkpoint or save point)
 - The load time between the Raven Beak fight and the Raven Beak X cutscene
 
