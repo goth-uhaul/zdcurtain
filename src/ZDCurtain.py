@@ -52,8 +52,8 @@ from user_profile import (
 )
 from utils import (
     BGRA_CHANNEL_COUNT,
+    DREAD_MAX_DELTA_MS,
     FROZEN,
-    ONE_DREAD_FRAME,
     ONE_SECOND,
     ZDCURTAIN_VERSION,
     is_valid_image,
@@ -74,8 +74,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
     show_error_signal = QtCore.Signal(FunctionType)
 
     # Timers
-    timer_general = QtCore.QTimer()
-    timer_general.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
+    timer_load_removal = QtCore.QTimer()
+    timer_load_removal.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
     timer_frame_analysis = QtCore.QTimer()
     timer_frame_analysis.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
 
@@ -95,6 +95,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.is_running = False
         self.is_tracking = False
         self.is_load_being_removed = False
+        self.load_time_removed_ms = 0
 
         self.screenshot_timer = 0
         self.screenshot_counter = 1
@@ -179,10 +180,11 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         # connect signals to functions
         self.after_setting_hotkey_signal.connect(lambda: after_setting_hotkey(self))
 
+        self.timer_load_removal.timeout.connect(lambda: perform_load_removal_logic(self))
         self.timer_frame_analysis.timeout.connect(
             lambda: self.__update_live_image_details(None, called_from_timer=True)
         )
-        self.timer_general.start(int(ONE_SECOND / 60))
+        self.timer_load_removal.start(int(ONE_SECOND / 60))
         self.timer_frame_analysis.start(int(ONE_SECOND / self.settings_dict["fps_limit"]))
 
         self.show()
@@ -236,11 +238,6 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
                     perform_black_level_analysis(self, cropped_capture)
                     perform_similarity_analysis(self, resized_capture, normalized_capture)
-                    perform_load_removal_logic(self)
-
-                    if is_end_screen(self, self.similarity_to_end_screen, 98):
-                        # stop tracking
-                        self.toggle_tracking()
 
                 if self.screenshot_timer >= 60:
                     # imwrite(f"sshot/sshot_{self.screenshot_counter}.png", normalized_capture)
@@ -264,7 +261,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         self.analysis_status_label.setText(
             f"Frame Time: {frame_time:.2f}, "
-            + f"Last Black Screen Duration {self.last_black_screen_time}ms"
+            + f"Last Black Screen Duration {self.last_black_screen_time}ms, "
+            + f"TLTR: {self.load_time_removed_ms:.2f}ms"
         )
 
     """         self.analysis_status_label.setText(
@@ -332,6 +330,16 @@ def check_if_load_ending(self):
     ):
         send_command(self, "pause")
 
+        self.single_load_time_removed_ms = ns_to_ms(
+            self.load_confidence_delta
+            + (
+                self.black_screen_over_detected_at_timestamp
+                - self.confirmed_load_detected_at_timestamp
+            )
+        )
+
+        self.load_time_removed_ms += self.single_load_time_removed_ms
+
         self.active_load_type = "none"
         self.load_confidence_delta = 0
         self.potential_load_detected_at_timestamp = 0
@@ -341,6 +349,13 @@ def check_if_load_ending(self):
 
 
 def perform_load_removal_logic(self):
+    if is_end_screen(self, self.similarity_to_end_screen, 98):
+        # stop tracking
+        self.toggle_tracking()
+
+    if not self.is_tracking:
+        return
+
     if self.black_level < self.settings_dict["black_threshold"] and not self.in_black_screen:
         self.in_black_screen = True
         self.black_screen_detected_at_timestamp = perf_counter_ns()
@@ -353,7 +368,7 @@ def perform_load_removal_logic(self):
         self.in_black_screen
         and self.active_load_type == "none"
         and perf_counter_ns() - self.black_screen_detected_at_timestamp
-        > ms_to_ns(ONE_DREAD_FRAME * 7)
+        > ms_to_ns(DREAD_MAX_DELTA_MS)
     ):
         self.confirmed_load_detected_at_timestamp = perf_counter_ns()
         self.active_load_type = "black"

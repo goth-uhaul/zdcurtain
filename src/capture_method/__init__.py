@@ -159,9 +159,14 @@ def change_capture_method(selected_capture_method: CaptureMethodEnum, zdcurtain:
 
     if selected_capture_method == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE:
         resolution = get_input_device_resolution(zdcurtain.settings_dict["capture_device_id"])
-        zdcurtain.settings_dict["capture_region"] = Region(
-            x=0, y=0, width=resolution[0], height=resolution[1]
-        )
+
+        if resolution:
+            zdcurtain.settings_dict["capture_region"] = Region(
+                x=0, y=0, width=resolution[0], height=resolution[1]
+            )
+
+    if zdcurtain.settings_dict["start_tracking_automatically"]:
+        zdcurtain.is_tracking = True
 
     # disable_selection_buttons = selected_capture_method == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE
     # zdcurtain.select_region_button.setDisabled(disable_selection_buttons)

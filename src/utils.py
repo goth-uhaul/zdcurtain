@@ -243,8 +243,10 @@ DWMWA_EXTENDED_FRAME_BOUNDS = 9
 MAXBYTE = 255
 ONE_SECOND = 1000
 """1000 milliseconds in 1 second"""
-ONE_DREAD_FRAME = 1 / 60
+ONE_DREAD_FRAME_MS = 1 / 60 * ONE_SECOND
 """16.67... milliseconds in one frame of Metroid Dread"""
+DREAD_MAX_DELTA_MS = ONE_DREAD_FRAME_MS * 6
+"""Dread Delta Time Cap"""
 BGR_CHANNEL_COUNT = 3
 """How many channels in a BGR image"""
 BGRA_CHANNEL_COUNT = 4
