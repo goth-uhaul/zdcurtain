@@ -231,7 +231,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
                 resized_capture = resize_image(capture, dim, 1, cv2.INTER_NEAREST)
 
                 if self.settings_dict["live_capture_region"]:
-                    set_preview_image(self.live_image, capture)
+                    set_preview_image(self.live_image, resized_capture)
 
                 if self.is_tracking:
                     cropped_capture = get_top_third_of_capture(resized_capture)
@@ -244,7 +244,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
                     # imwrite(f"sshot/sshot_{self.screenshot_counter}.png", normalized_capture)
                     self.screenshot_counter += 1
 
-                self.screenshot_timer += 1
+                # self.screenshot_timer += 1
             else:
                 return  # self.__try_to_recover_capture()
 
@@ -680,6 +680,7 @@ def reset_statistics(self):
     self.similarity_to_teleportal_max = 0.0
     self.similarity_to_egg_max = 0.0
     self.similarity_to_end_screen_max = 0.0
+    self.load_time_removed_ms = 0
 
 
 def load_comparison_images(self):
