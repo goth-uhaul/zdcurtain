@@ -24,6 +24,11 @@ ZDCurtain eliminates:
 - Load times that occur during hint screens (for example, when first loading the game or when reloading after returning to a checkpoint or save point)
 - The load time between the Raven Beak fight and the Raven Beak X cutscene
 
+## Known Issues
+
+- ZDCurtain has only been tested under "Default Brightness" in Metroid Dread. Other brightness settings may produce different results.
+- Trying to begin or end tracking in the middle of a load has adverse effects and should be avoided.
+
 ## Known Limitations
 
 - **You must provide a clean game feed to ZDCurtain in order for it to work.** This means no stream layouts or alerts can obscure the view that ZDCurtain has to the game feed. To launch a clean game feed in OBS, either set your OBS Virtual Camera to the output of your capture card, or right-click your capture card source and click "Open Source Projector", then click "New window". Resize your projector window so that it is *at least* 640x360 in resolution.
@@ -31,8 +36,7 @@ ZDCurtain eliminates:
 - ZDCurtain is only capable of interacting with the "Real Time" timer in LiveSplit, which means you cannot have a Real-Time Attack (RTA) time and a Loads Removed Time (LRT) at the same time. This will be addressed in a future release.
 - ZDCurtain must be able to rapidly pause and resume the timer in order to remove black screen load times. For this reason, ZDCurtain is incompatible with the "Double-Tap Prevention" option in LiveSplit.
 - Custom regions cannot be selected at this time.
-- ZDCurtain has only been tested under "Default Brightness" in Metroid Dread. Other brightness settings may produce different results.
-- ZDCurtain has not been tested with Metroid Dread Randomizer yet. Use at your own risk.
+- ZDCurtain has not been fully tested with Metroid Dread Randomizer yet. Use at your own risk.
 
 # Installation
 
