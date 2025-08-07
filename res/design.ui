@@ -917,7 +917,40 @@
       </rect>
      </property>
      <property name="text">
-      <string>Total Load Time Removed: 6m 37s 900ms</string>
+      <string>Total Load Time Removed: --m --s ---ms</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="load_cooldown_active_label">
+     <property name="geometry">
+      <rect>
+       <x>499</x>
+       <y>260</y>
+       <width>131</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Load Cooldown Active</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="reset_tltr_button">
+     <property name="geometry">
+      <rect>
+       <x>493</x>
+       <y>65</y>
+       <width>144</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Reset Total Load 
+Time Removed</string>
      </property>
     </widget>
    </widget>

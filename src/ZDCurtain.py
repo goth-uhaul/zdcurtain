@@ -180,7 +180,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         # connecting button clicks to functions
         self.select_window_button.clicked.connect(lambda: select_window_and_start_tracking(self))
         self.select_device_button.clicked.connect(lambda: open_settings(self))
-        self.reset_statistics_button.clicked.connect(lambda: self.reset_statistics)
+        self.reset_statistics_button.clicked.connect(self.reset_statistics)
+        self.reset_tltr_button.clicked.connect(self.reset_lrt)
         self.begin_end_tracking_button.clicked.connect(self.on_tracking_button_press)
 
         # connect signals to functions
@@ -193,6 +194,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.timer_load_removal.start(int(ONE_SECOND / 60))
         self.timer_frame_analysis.start(int(ONE_SECOND / self.settings_dict["fps_limit"]))
 
+        self.load_cooldown_active_label.hide()
         self.show()
 
         load_settings_on_open(self)
@@ -264,9 +266,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
             )
 
         self.analysis_status_label.setText(
-            f"Frame Time: {frame_time:.2f}, "
-            + f"Last Black Screen Duration {self.last_black_screen_time}ms, "
-            + f"TLTR: {self.load_time_removed_ms:.2f}ms"
+            f"Frame Time: {frame_time:.2f}, Load Type: {self.active_load_type}, "
+            + f"Last Black Screen Duration {self.last_black_screen_time}ms"
         )
 
         tltr_m, tltr_s, tltr_ms = ms_to_msms(self.load_time_removed_ms)
@@ -310,6 +311,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.last_black_screen_time = 0
         self.load_confidence_delta = 0
         self.load_cooldown_timestamp = 0
+        self.load_cooldown_is_active = False
+        self.load_cooldown_type = "none"
         self.reset_similarity_variables()
 
     def reset_similarity_variables(self):
@@ -386,6 +389,7 @@ def check_load_cooldown(self):
         self.load_cooldown_timestamp = 0
         self.load_cooldown_type = "none"
         self.load_cooldown_is_active = False
+        self.load_cooldown_active_label.hide()
 
 
 def check_if_load_ending(self):
@@ -395,10 +399,15 @@ def check_if_load_ending(self):
     ):
         send_command(self, "pause")
 
-        if self.load_cooldown_type == "none" and self.active_load_type not in {"none", "black"}:
-            self.load_cooldown_type = self.active_load_type
-            self.load_cooldown_timestamp = perf_counter_ns()
-            self.load_cooldown_is_active = True
+        if self.active_load_type not in {"none", "black"}:  # noqa: SIM102 need self.active_load_type
+            if (
+                self.load_cooldown_type == "none"
+                and self.settings_dict[f"load_cooldown_{self.active_load_type}_ms"] > 0
+            ):
+                self.load_cooldown_type = self.active_load_type
+                self.load_cooldown_timestamp = perf_counter_ns()
+                self.load_cooldown_is_active = True
+                self.load_cooldown_active_label.show()
 
         if (
             perf_counter_ns() - self.black_screen_over_detected_at_timestamp
@@ -475,7 +484,7 @@ def perform_load_removal_logic(self):
             self.similarity_to_egg,
             self.settings_dict["similarity_threshold_egg"],
         ):
-            self.active_load_type = "capsule"
+            self.active_load_type = "egg"
 
     if not self.is_load_being_removed and self.active_load_type != "none":
         send_command(self, "pause")
@@ -733,7 +742,7 @@ def update_labels(self):  # noqa: PLR0912, PLR0915
     else:
         self.teleportal_indicator_load_label.setStyleSheet("background-color: red")
 
-    if self.active_load_type == "capsule":
+    if self.active_load_type == "egg":
         self.egg_indicator_load_label.setStyleSheet("background-color: green")
     else:
         self.egg_indicator_load_label.setStyleSheet("background-color: red")

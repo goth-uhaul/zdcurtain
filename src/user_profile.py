@@ -83,7 +83,7 @@ DEFAULT_PROFILE = UserProfileDict(
     load_cooldown_elevator_ms=0,
     load_cooldown_tram_ms=0,
     load_cooldown_teleportal_ms=0,
-    load_cooldown_egg_ms=1000,
+    load_cooldown_egg_ms=3000,
     load_confidence_threshold_ms=500,
     capture_region=Region(x=0, y=0, width=1, height=1),
 )
