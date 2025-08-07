@@ -1041,7 +1041,7 @@ Time Removed</string>
      <bool>true</bool>
     </property>
     <property name="text">
-     <string>Analysis FPS: 9999</string>
+     <string>(analysis status bar)</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -1053,7 +1053,7 @@ Time Removed</string>
       <x>10</x>
       <y>10</y>
       <width>640</width>
-      <height>120</height>
+      <height>144</height>
      </rect>
     </property>
     <property name="maximumSize">

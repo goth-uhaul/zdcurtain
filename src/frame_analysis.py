@@ -26,13 +26,13 @@ def crop_image(capture: MatLike | None, x1, y1, x2, y2):
     return capture[y1:y2, x1:x2]
 
 
-def get_top_third_of_capture(capture: MatLike | None):
-    """Get the top third of the provided capture image."""
+def get_black_screen_detection_area(capture: MatLike | None):
+    """Get a cropped capture of the top 40% of the screen."""
     if not is_valid_image(capture):
         return None
 
     capture_height, capture_width, _ = capture.shape
-    return crop_image(capture, 0, 0, capture_width, floor(capture_height / 3))
+    return crop_image(capture, 0, 0, capture_width, floor(capture_height * 0.4))
 
 
 MAXRANGE = MAXBYTE + 1

@@ -35,8 +35,8 @@ import error_messages
 from about import open_about
 from capture_method import CaptureMethodBase, CaptureMethodEnum
 from frame_analysis import (
+    get_black_screen_detection_area,
     get_comparison_method_by_name,
-    get_top_third_of_capture,
     is_black,
     normalize_brightness_histogram,
 )
@@ -195,6 +195,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.timer_frame_analysis.start(int(ONE_SECOND / self.settings_dict["fps_limit"]))
 
         self.load_cooldown_active_label.hide()
+        self.analysis_status_label.hide()
         self.show()
 
         load_settings_on_open(self)
@@ -238,7 +239,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
                     set_preview_image(self.live_image, resized_capture)
 
                 if self.is_tracking:
-                    cropped_capture = get_top_third_of_capture(resized_capture)
+                    cropped_capture = get_black_screen_detection_area(resized_capture)
                     normalized_capture = normalize_brightness_histogram(resized_capture)
 
                     perform_black_level_analysis(self, cropped_capture)
@@ -334,11 +335,13 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.reset_all_variables()
         self.is_tracking = True
         self.begin_end_tracking_button.setText("End Tracking")
+        self.analysis_status_label.show()
 
     def end_tracking(self):
         self.reset_tracking_variables()
         self.is_tracking = False
         self.begin_end_tracking_button.setText("Begin Tracking")
+        self.analysis_status_label.hide()
 
     @override
     def closeEvent(self, event: QtGui.QCloseEvent | None = None):
@@ -664,7 +667,7 @@ def update_labels(self):  # noqa: PLR0912, PLR0915
 
     self.image_black_label.setText(
         f"Current black level {self.black_level:.4f}, "
-        + f"threshold {self.settings_dict['black_threshold']}%  "
+        + f"threshold {self.settings_dict['black_threshold']:.1f}%  "
     )
 
     self.similarity_to_elevator_label.setText(
