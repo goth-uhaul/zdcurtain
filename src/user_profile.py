@@ -42,6 +42,10 @@ class UserProfileDict(TypedDict):
     similarity_threshold_teleportal: int
     similarity_threshold_egg: int
     similarity_threshold_end_screen: int
+    load_cooldown_elevator_ms: int
+    load_cooldown_tram_ms: int
+    load_cooldown_teleportal_ms: int
+    load_cooldown_egg_ms: int
     load_confidence_threshold_ms: int
     capture_region: Region
 
@@ -76,6 +80,10 @@ DEFAULT_PROFILE = UserProfileDict(
     similarity_threshold_teleportal=89,
     similarity_threshold_egg=90,
     similarity_threshold_end_screen=98,
+    load_cooldown_elevator_ms=0,
+    load_cooldown_tram_ms=0,
+    load_cooldown_teleportal_ms=0,
+    load_cooldown_egg_ms=1000,
     load_confidence_threshold_ms=500,
     capture_region=Region(x=0, y=0, width=1, height=1),
 )
@@ -191,9 +199,6 @@ def load_settings(zdcurtain: "ZDCurtain", from_path: str = ""):
         return
 
     zdcurtain.last_successfully_loaded_settings_file_path = load_settings_file_path
-    # TODO: Should this check be in `__load_start_image` ?
-    if not zdcurtain.is_running:
-        zdcurtain.reload_start_image_signal.emit(False, True)
 
 
 def load_settings_on_open(zdcurtain: "ZDCurtain"):

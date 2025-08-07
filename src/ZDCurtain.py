@@ -70,7 +70,6 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
     # Signals
     pause_signal = QtCore.Signal()
     after_setting_hotkey_signal = QtCore.Signal()
-    reload_start_image_signal = QtCore.Signal(bool, bool)
     # Use this signal when trying to show an error from outside the main thread
     show_error_signal = QtCore.Signal(FunctionType)
 
@@ -93,13 +92,11 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.last_successfully_loaded_settings_file_path = ""
         """Path of the settings file to default to. `None` until we try to load once."""
 
-        self.is_running = False
         self.is_tracking = False
+
+        # load removal
         self.is_load_being_removed = False
         self.load_time_removed_ms = 0
-
-        self.screenshot_timer = 0
-        self.screenshot_counter = 1
 
         # Confidence algorithm
         self.black_screen_detected_at_timestamp = 0
@@ -111,6 +108,10 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.in_black_screen = False
         self.last_black_screen_time = 0
         self.active_load_type = "none"
+
+        self.load_cooldown_timestamp = 0
+        self.load_cooldown_is_active = False
+        self.load_cooldown_type = "none"
 
         # Heuristics
         self.black_level = 1.0
@@ -145,6 +146,10 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.comparison_train_right_gravity = None
         self.comparison_train_right_power = None
         self.comparison_train_right_varia = None
+
+        # screenshots
+        self.screenshot_timer = 0
+        self.screenshot_counter = 1
 
         load_comparison_images(self)
 
@@ -221,9 +226,6 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         cropped_capture = None
 
         if called_from_timer:
-            if self.is_running:
-                return
-
             capture = self.capture_method.get_frame()
 
             if is_valid_image(capture):
@@ -307,6 +309,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.is_frame_black = False
         self.last_black_screen_time = 0
         self.load_confidence_delta = 0
+        self.load_cooldown_timestamp = 0
         self.reset_similarity_variables()
 
     def reset_similarity_variables(self):
@@ -373,31 +376,50 @@ def is_end_screen(self, similarity, threshold):
     return similarity > threshold and self.active_load_type == "none"
 
 
+def check_load_cooldown(self):
+    if (
+        self.load_cooldown_type != "none"
+        and perf_counter_ns()
+        > self.load_cooldown_timestamp
+        + ms_to_ns(self.settings_dict[f"load_cooldown_{self.load_cooldown_type}_ms"])
+    ):
+        self.load_cooldown_timestamp = 0
+        self.load_cooldown_type = "none"
+        self.load_cooldown_is_active = False
+
+
 def check_if_load_ending(self):
     if (
         self.black_screen_over_detected_at_timestamp > self.confirmed_load_detected_at_timestamp
-        and perf_counter_ns() - self.black_screen_over_detected_at_timestamp
-        > self.load_confidence_delta
         and self.is_load_being_removed
     ):
         send_command(self, "pause")
 
-        self.single_load_time_removed_ms = ns_to_ms(
-            self.load_confidence_delta
-            + (
-                self.black_screen_over_detected_at_timestamp
-                - self.confirmed_load_detected_at_timestamp
+        if self.load_cooldown_type == "none" and self.active_load_type not in {"none", "black"}:
+            self.load_cooldown_type = self.active_load_type
+            self.load_cooldown_timestamp = perf_counter_ns()
+            self.load_cooldown_is_active = True
+
+        if (
+            perf_counter_ns() - self.black_screen_over_detected_at_timestamp
+            > self.load_confidence_delta
+        ):
+            self.single_load_time_removed_ms = ns_to_ms(
+                self.load_confidence_delta
+                + (
+                    self.black_screen_over_detected_at_timestamp
+                    - self.confirmed_load_detected_at_timestamp
+                )
             )
-        )
 
-        self.load_time_removed_ms += self.single_load_time_removed_ms
+            self.load_time_removed_ms += self.single_load_time_removed_ms
 
-        self.active_load_type = "none"
-        self.load_confidence_delta = 0
-        self.potential_load_detected_at_timestamp = 0
-        self.confirmed_load_detected_at_timestamp = 0
+            self.active_load_type = "none"
+            self.load_confidence_delta = 0
+            self.potential_load_detected_at_timestamp = 0
+            self.confirmed_load_detected_at_timestamp = 0
 
-        self.is_load_being_removed = False
+            self.is_load_being_removed = False
 
 
 def perform_load_removal_logic(self):
@@ -407,6 +429,8 @@ def perform_load_removal_logic(self):
 
     if not self.is_tracking:
         return
+
+    check_load_cooldown(self)
 
     if self.black_level < self.settings_dict["black_threshold"] and not self.in_black_screen:
         self.in_black_screen = True
@@ -419,13 +443,14 @@ def perform_load_removal_logic(self):
     if (
         self.in_black_screen
         and self.active_load_type == "none"
+        and not self.load_cooldown_is_active
         and perf_counter_ns() - self.black_screen_detected_at_timestamp
         > ms_to_ns(DREAD_MAX_DELTA_MS)
     ):
         self.confirmed_load_detected_at_timestamp = perf_counter_ns()
         self.active_load_type = "black"
 
-    if self.active_load_type in {"none", "black"}:
+    if self.active_load_type in {"none", "black"} and not self.load_cooldown_is_active:
         if check_load_confidence(
             self,
             self.similarity_to_elevator,

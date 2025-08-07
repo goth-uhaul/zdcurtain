@@ -281,6 +281,10 @@ def get_default_settings_from_ui(zdcurtain: "ZDCurtain"):
         "similarity_threshold_teleportal": default_settings_dialog.teleportal_similarity_spinbox.value(),
         "similarity_threshold_egg": default_settings_dialog.egg_similarity_spinbox.value(),
         "similarity_threshold_end_screen": default_settings_dialog.end_screen_similarity_spinbox.value(),
+        "load_cooldown_elevator_ms": DEFAULT_PROFILE["load_cooldown_elevator_ms"],
+        "load_cooldown_tram_ms": DEFAULT_PROFILE["load_cooldown_tram_ms"],
+        "load_cooldown_teleportal_ms": DEFAULT_PROFILE["load_cooldown_teleportal_ms"],
+        "load_cooldown_egg_ms": DEFAULT_PROFILE["load_cooldown_egg_ms"],
         "load_confidence_threshold_ms": default_settings_dialog.load_confidence_threshold_spinbox.value(),
         "capture_region": DEFAULT_PROFILE["capture_region"],
     }
