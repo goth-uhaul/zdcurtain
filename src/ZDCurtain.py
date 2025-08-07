@@ -175,8 +175,8 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         # connecting button clicks to functions
         self.select_window_button.clicked.connect(lambda: select_window_and_start_tracking(self))
         self.select_device_button.clicked.connect(lambda: open_settings(self))
-        self.reset_statistics_button.clicked.connect(lambda: reset_statistics(self))
-        self.begin_end_tracking_button.clicked.connect(self.toggle_tracking)
+        self.reset_statistics_button.clicked.connect(lambda: self.reset_statistics)
+        self.begin_end_tracking_button.clicked.connect(self.on_tracking_button_press)
 
         # connect signals to functions
         self.after_setting_hotkey_signal.connect(lambda: after_setting_hotkey(self))
@@ -240,11 +240,12 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
                     perform_black_level_analysis(self, cropped_capture)
                     perform_similarity_analysis(self, resized_capture, normalized_capture)
 
-                if self.screenshot_timer >= 60:
-                    # imwrite(f"sshot/sshot_{self.screenshot_counter}.png", normalized_capture)
-                    self.screenshot_counter += 1
+                    # if self.screenshot_timer >= 12:
+                    # imwrite(f"sshot/sshot_{self.screenshot_counter}.png", resized_capture)
+                    # self.screenshot_timer = 0
+                    # self.screenshot_counter += 1
 
-                # self.screenshot_timer += 1
+                    # self.screenshot_timer += 1
             else:
                 return  # self.__try_to_recover_capture()
 
@@ -277,17 +278,61 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
             + f" {self.confirmed_load_detected_at_timestamp}; lt: {self.active_load_type}"
         ) """
 
-    def toggle_tracking(self):
-        self.is_tracking = not self.is_tracking
-
+    def on_tracking_button_press(self):
         if self.is_tracking:
-            self.begin_end_tracking_button.setText("End Tracking")
+            self.end_tracking()
         else:
-            self.begin_end_tracking_button.setText("Begin Tracking")
+            self.begin_tracking()
 
     def pause_timer(self):
         # TODO: add what to do when you hit pause hotkey, if this even needs to be done
         pass
+
+    def reset_all_variables(self):
+        self.reset_tracking_variables()
+        self.reset_lrt()
+
+    def reset_lrt(self):
+        self.load_time_removed_ms = 0
+
+    def reset_tracking_variables(self):
+        self.active_load_type = "none"
+        self.black_screen_detected_at_timestamp = 0
+        self.black_screen_over_detected_at_timestamp = 0
+        self.potential_load_detected_at_timestamp = 0
+        self.confirmed_load_detected_at_timestamp = 0
+        self.is_load_being_removed = False
+        self.in_black_screen = False
+        self.black_level = 1.0
+        self.is_frame_black = False
+        self.last_black_screen_time = 0
+        self.load_confidence_delta = 0
+        self.reset_similarity_variables()
+
+    def reset_similarity_variables(self):
+        self.similarity_to_tram = 0.0
+        self.similarity_to_tram_max = 0.0
+        self.similarity_to_teleportal = 0.0
+        self.similarity_to_teleportal_max = 0.0
+        self.similarity_to_elevator = 0.0
+        self.similarity_to_elevator_max = 0.0
+        self.similarity_to_egg = 0.0
+        self.similarity_to_egg_max = 0.0
+        self.similarity_to_end_screen = 0.0
+        self.similarity_to_end_screen_max = 0.0
+
+    def reset_statistics(self):
+        self.reset_similarity_variables()
+
+    def begin_tracking(self):
+        self.reset_all_variables()
+        self.is_tracking = True
+        self.begin_end_tracking_button.setText("End Tracking")
+
+    def end_tracking(self):
+        self.reset_tracking_variables()
+        self.is_tracking = False
+        self.begin_end_tracking_button.setText("Begin Tracking")
 
     @override
     def closeEvent(self, event: QtGui.QCloseEvent | None = None):
@@ -358,7 +403,7 @@ def check_if_load_ending(self):
 def perform_load_removal_logic(self):
     if is_end_screen(self, self.similarity_to_end_screen, 98):
         # stop tracking
-        self.toggle_tracking()
+        self.end_tracking()
 
     if not self.is_tracking:
         return
@@ -674,50 +719,29 @@ def update_labels(self):  # noqa: PLR0912, PLR0915
         self.end_indicator_ever_label.setStyleSheet("background-color: red")
 
 
-def reset_statistics(self):
-    self.similarity_to_elevator_max = 0.0
-    self.similarity_to_tram_max = 0.0
-    self.similarity_to_teleportal_max = 0.0
-    self.similarity_to_egg_max = 0.0
-    self.similarity_to_end_screen_max = 0.0
-    self.load_time_removed_ms = 0
-
-
 def load_comparison_images(self):
-    self.comparison_capsule_gravity = read_and_format_image(
-        "res/comparison/capsule_gravity_first.png"
-    )
-    self.comparison_capsule_power = read_and_format_image("res/comparison/capsule_power_first.png")
-    self.comparison_capsule_varia = read_and_format_image("res/comparison/capsule_varia_first.png")
+    self.comparison_capsule_gravity = read_and_format_image("res/comparison/capsule_gravity.png")
+    self.comparison_capsule_power = read_and_format_image("res/comparison/capsule_power.png")
+    self.comparison_capsule_varia = read_and_format_image("res/comparison/capsule_varia.png")
     self.comparison_elevator_gravity = read_and_format_image("res/comparison/elevator_gravity.png")
     self.comparison_elevator_power = read_and_format_image("res/comparison/elevator_power.png")
     self.comparison_elevator_varia = read_and_format_image("res/comparison/elevator_varia.png")
-    self.comparison_teleport_gravity = read_and_format_image(
-        "res/comparison/teleport_gravity_first.png"
-    )
-    self.comparison_teleport_power = read_and_format_image(
-        "res/comparison/teleport_power_first.png"
-    )
-    self.comparison_teleport_varia = read_and_format_image(
-        "res/comparison/teleport_varia_first.png"
-    )
+    self.comparison_teleport_gravity = read_and_format_image("res/comparison/teleport_gravity.png")
+    self.comparison_teleport_power = read_and_format_image("res/comparison/teleport_power.png")
+    self.comparison_teleport_varia = read_and_format_image("res/comparison/teleport_varia.png")
     self.comparison_train_left_gravity = read_and_format_image(
-        "res/comparison/train_left_gravity_first.png"
+        "res/comparison/train_left_gravity.png"
     )
-    self.comparison_train_left_power = read_and_format_image(
-        "res/comparison/train_left_power_first.png"
-    )
-    self.comparison_train_left_varia = read_and_format_image(
-        "res/comparison/train_left_varia_first.png"
-    )
+    self.comparison_train_left_power = read_and_format_image("res/comparison/train_left_power.png")
+    self.comparison_train_left_varia = read_and_format_image("res/comparison/train_left_varia.png")
     self.comparison_train_right_gravity = read_and_format_image(
-        "res/comparison/train_right_gravity_first.png"
+        "res/comparison/train_right_gravity.png"
     )
     self.comparison_train_right_power = read_and_format_image(
-        "res/comparison/train_right_power_first.png"
+        "res/comparison/train_right_power.png"
     )
     self.comparison_train_right_varia = read_and_format_image(
-        "res/comparison/train_right_varia_first.png"
+        "res/comparison/train_right_varia.png"
     )
     self.comparison_end_screen = read_and_format_image("res/comparison/end_screen.png")
 
@@ -753,7 +777,7 @@ def set_preview_image(qlabel: QLabel, image: MatLike | None):
 
 def select_window_and_start_tracking(self):
     if self.settings_dict["start_tracking_automatically"] and not self.is_tracking:
-        self.toggle_tracking()
+        self.begin_tracking()
 
     select_window(self)
 

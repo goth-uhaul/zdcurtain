@@ -141,7 +141,7 @@ def __load_settings_from_file(zdcurtain: "ZDCurtain", load_settings_file_path: s
         zdcurtain.last_saved_settings = deepcopy(zdcurtain.settings_dict)
 
         if zdcurtain.settings_dict["start_tracking_automatically"]:
-            zdcurtain.toggle_tracking()
+            zdcurtain.begin_tracking()
 
     except (FileNotFoundError, MemoryError, TypeError, tomllib.TOMLDecodeError):
         zdcurtain.show_error_signal.emit(error_messages.invalid_settings)
