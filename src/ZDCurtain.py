@@ -211,9 +211,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
             if self.settings_dict["capture_method"] == CaptureMethodEnum.BITBLT:
                 message += "\n(captured window may be incompatible with BitBlt)"
             self.live_image.setText(message)
-            recovered = self.capture_method.recover_window(
-                self.settings_dict["captured_window_title"]
-            )
+            recovered = self.capture_method.recover_window(self.settings_dict["captured_window_title"])
             if recovered:
                 capture = self.capture_method.get_frame()
 
@@ -262,8 +260,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         if self.black_screen_detected_at_timestamp <= self.black_screen_over_detected_at_timestamp:
             self.last_black_screen_time = ns_to_ms(
-                self.black_screen_over_detected_at_timestamp
-                - self.black_screen_detected_at_timestamp
+                self.black_screen_over_detected_at_timestamp - self.black_screen_detected_at_timestamp
             )
 
         self.analysis_status_label.setText(
@@ -383,11 +380,8 @@ def is_end_screen(self, similarity, threshold):
 
 
 def check_load_cooldown(self):
-    if (
-        self.load_cooldown_type != "none"
-        and perf_counter_ns()
-        > self.load_cooldown_timestamp
-        + ms_to_ns(self.settings_dict[f"load_cooldown_{self.load_cooldown_type}_ms"])
+    if self.load_cooldown_type != "none" and perf_counter_ns() > self.load_cooldown_timestamp + ms_to_ns(
+        self.settings_dict[f"load_cooldown_{self.load_cooldown_type}_ms"]
     ):
         self.load_cooldown_timestamp = 0
         self.load_cooldown_type = "none"
@@ -412,16 +406,10 @@ def check_if_load_ending(self):
                 self.load_cooldown_is_active = True
                 self.load_cooldown_active_label.show()
 
-        if (
-            perf_counter_ns() - self.black_screen_over_detected_at_timestamp
-            > self.load_confidence_delta
-        ):
+        if perf_counter_ns() - self.black_screen_over_detected_at_timestamp > self.load_confidence_delta:
             self.single_load_time_removed_ms = ns_to_ms(
                 self.load_confidence_delta
-                + (
-                    self.black_screen_over_detected_at_timestamp
-                    - self.confirmed_load_detected_at_timestamp
-                )
+                + (self.black_screen_over_detected_at_timestamp - self.confirmed_load_detected_at_timestamp)
             )
 
             self.load_time_removed_ms += self.single_load_time_removed_ms
@@ -456,8 +444,7 @@ def perform_load_removal_logic(self):
         self.in_black_screen
         and self.active_load_type == "none"
         and not self.load_cooldown_is_active
-        and perf_counter_ns() - self.black_screen_detected_at_timestamp
-        > ms_to_ns(DREAD_MAX_DELTA_MS)
+        and perf_counter_ns() - self.black_screen_detected_at_timestamp > ms_to_ns(DREAD_MAX_DELTA_MS)
     ):
         self.confirmed_load_detected_at_timestamp = perf_counter_ns()
         self.active_load_type = "black"
@@ -514,9 +501,7 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
     )
 
     capture_type_to_use = (
-        normalized_capture
-        if self.settings_dict["similarity_use_normalized_capture_elevator"]
-        else capture
+        normalized_capture if self.settings_dict["similarity_use_normalized_capture_elevator"] else capture
     )
 
     self.similarity_to_elevator = (
@@ -537,36 +522,20 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
         * 100
     )
 
-    comparison_method_to_use = get_comparison_method_by_name(
-        self.settings_dict["similarity_algorithm_tram"]
-    )
+    comparison_method_to_use = get_comparison_method_by_name(self.settings_dict["similarity_algorithm_tram"])
 
     capture_type_to_use = (
-        normalized_capture
-        if self.settings_dict["similarity_use_normalized_capture_tram"]
-        else capture
+        normalized_capture if self.settings_dict["similarity_use_normalized_capture_tram"] else capture
     )
 
     self.similarity_to_tram = (
         max(
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_train_left_power.image_data
-            ),
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_train_left_varia.image_data
-            ),
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_train_left_gravity.image_data
-            ),
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_train_right_power.image_data
-            ),
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_train_right_varia.image_data
-            ),
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_train_right_gravity.image_data
-            ),
+            comparison_method_to_use(capture_type_to_use, self.comparison_train_left_power.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_train_left_varia.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_train_left_gravity.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_train_right_power.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_train_right_varia.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_train_right_gravity.image_data),
         )
         * 100
     )
@@ -576,63 +545,43 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
     )
 
     capture_type_to_use = (
-        normalized_capture
-        if self.settings_dict["similarity_use_normalized_capture_teleportal"]
-        else capture
+        normalized_capture if self.settings_dict["similarity_use_normalized_capture_teleportal"] else capture
     )
 
     self.similarity_to_teleportal = (
         max(
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_teleport_power.image_data
-            ),
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_teleport_varia.image_data
-            ),
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_teleport_gravity.image_data
-            ),
+            comparison_method_to_use(capture_type_to_use, self.comparison_teleport_power.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_teleport_varia.image_data),
+            comparison_method_to_use(capture_type_to_use, self.comparison_teleport_gravity.image_data),
         )
         * 100
     )
 
-    comparison_method_to_use = get_comparison_method_by_name(
-        self.settings_dict["similarity_algorithm_egg"]
-    )
+    comparison_method_to_use = get_comparison_method_by_name(self.settings_dict["similarity_algorithm_egg"])
 
     capture_type_to_use = (
-        normalized_capture
-        if self.settings_dict["similarity_use_normalized_capture_egg"]
-        else capture
+        normalized_capture if self.settings_dict["similarity_use_normalized_capture_egg"] else capture
     )
 
     self.similarity_to_egg = (
         max(
             comparison_method_to_use(capture_type_to_use, self.comparison_capsule_power.image_data),
             comparison_method_to_use(capture_type_to_use, self.comparison_capsule_varia.image_data),
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_capsule_gravity.image_data
-            ),
+            comparison_method_to_use(capture_type_to_use, self.comparison_capsule_gravity.image_data),
         )
         * 100
     )
 
-    self.similarity_to_elevator_max = max(
-        self.similarity_to_elevator_max, self.similarity_to_elevator
-    )
+    self.similarity_to_elevator_max = max(self.similarity_to_elevator_max, self.similarity_to_elevator)
     self.similarity_to_tram_max = max(self.similarity_to_tram_max, self.similarity_to_tram)
-    self.similarity_to_teleportal_max = max(
-        self.similarity_to_teleportal_max, self.similarity_to_teleportal
-    )
+    self.similarity_to_teleportal_max = max(self.similarity_to_teleportal_max, self.similarity_to_teleportal)
     self.similarity_to_egg_max = max(self.similarity_to_egg_max, self.similarity_to_egg)
 
     self.similarity_to_egg = (
         max(
             comparison_method_to_use(capture_type_to_use, self.comparison_capsule_power.image_data),
             comparison_method_to_use(capture_type_to_use, self.comparison_capsule_varia.image_data),
-            comparison_method_to_use(
-                capture_type_to_use, self.comparison_capsule_gravity.image_data
-            ),
+            comparison_method_to_use(capture_type_to_use, self.comparison_capsule_gravity.image_data),
         )
         * 100
     )
@@ -642,18 +591,14 @@ def perform_similarity_analysis(self, capture: MatLike | None, normalized_captur
     )
 
     capture_type_to_use = (
-        normalized_capture
-        if self.settings_dict["similarity_use_normalized_capture_end_screen"]
-        else capture
+        normalized_capture if self.settings_dict["similarity_use_normalized_capture_end_screen"] else capture
     )
 
     self.similarity_to_end_screen = (
         comparison_method_to_use(capture_type_to_use, self.comparison_end_screen.image_data) * 100
     )
 
-    self.similarity_to_end_screen_max = max(
-        self.similarity_to_end_screen_max, self.similarity_to_end_screen
-    )
+    self.similarity_to_end_screen_max = max(self.similarity_to_end_screen_max, self.similarity_to_end_screen)
 
 
 def update_labels(self):  # noqa: PLR0912, PLR0915
@@ -766,20 +711,12 @@ def load_comparison_images(self):
     self.comparison_teleport_gravity = read_and_format_image("res/comparison/teleport_gravity.png")
     self.comparison_teleport_power = read_and_format_image("res/comparison/teleport_power.png")
     self.comparison_teleport_varia = read_and_format_image("res/comparison/teleport_varia.png")
-    self.comparison_train_left_gravity = read_and_format_image(
-        "res/comparison/train_left_gravity.png"
-    )
+    self.comparison_train_left_gravity = read_and_format_image("res/comparison/train_left_gravity.png")
     self.comparison_train_left_power = read_and_format_image("res/comparison/train_left_power.png")
     self.comparison_train_left_varia = read_and_format_image("res/comparison/train_left_varia.png")
-    self.comparison_train_right_gravity = read_and_format_image(
-        "res/comparison/train_right_gravity.png"
-    )
-    self.comparison_train_right_power = read_and_format_image(
-        "res/comparison/train_right_power.png"
-    )
-    self.comparison_train_right_varia = read_and_format_image(
-        "res/comparison/train_right_varia.png"
-    )
+    self.comparison_train_right_gravity = read_and_format_image("res/comparison/train_right_gravity.png")
+    self.comparison_train_right_power = read_and_format_image("res/comparison/train_right_power.png")
+    self.comparison_train_right_varia = read_and_format_image("res/comparison/train_right_varia.png")
     self.comparison_end_screen = read_and_format_image("res/comparison/end_screen.png")
 
 

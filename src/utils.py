@@ -1,6 +1,6 @@
 import asyncio
 import os
-import subprocess
+import subprocess  # noqa: S404 no new processes are spawned
 import sys
 import tomllib
 from collections.abc import Callable, Iterable, Sequence
