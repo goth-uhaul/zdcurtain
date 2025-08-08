@@ -35,9 +35,9 @@ import error_messages
 from about import open_about
 from capture_method import CaptureMethodBase, CaptureMethodEnum
 from frame_analysis import (
+    calculate_uniform_black_level,
     get_black_screen_detection_area,
     get_comparison_method_by_name,
-    is_black,
     normalize_brightness_histogram,
 )
 from hotkeys import HOTKEYS, after_setting_hotkey, send_command
@@ -56,6 +56,7 @@ from utils import (
     FROZEN,
     ONE_SECOND,
     ZDCURTAIN_VERSION,
+    imwrite,
     is_valid_image,
     list_processes,
     ms_to_msms,
@@ -115,6 +116,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
         # Heuristics
         self.black_level = 1.0
+        self.blacklevel_entropy = 0.0
         self.is_frame_black = False
         self.similarity_to_tram = 0.0
         self.similarity_to_tram_max = 0.0
@@ -150,6 +152,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         # screenshots
         self.screenshot_timer = 0
         self.screenshot_counter = 1
+        self.take_screenshots = False
 
         load_comparison_images(self)
 
@@ -231,7 +234,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
 
             if is_valid_image(capture):
                 dim = (640, 360)
-                resized_capture = resize_image(capture, dim, 1, cv2.INTER_NEAREST)
+                resized_capture = resize_image(capture, dim, 1, cv2.INTER_AREA)
 
                 if self.settings_dict["live_capture_region"]:
                     set_preview_image(self.live_image, resized_capture)
@@ -243,12 +246,13 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
                     perform_black_level_analysis(self, cropped_capture)
                     perform_similarity_analysis(self, resized_capture, normalized_capture)
 
-                    # if self.screenshot_timer >= 12:
-                    # imwrite(f"sshot/sshot_{self.screenshot_counter}.png", resized_capture)
-                    # self.screenshot_timer = 0
-                    # self.screenshot_counter += 1
+                    if self.take_screenshots:
+                        if self.screenshot_timer >= 4:
+                            imwrite(f"sshot/sshot_{self.screenshot_counter}.png", normalized_capture)
+                            self.screenshot_timer = 0
+                            self.screenshot_counter += 1
 
-                    # self.screenshot_timer += 1
+                        self.screenshot_timer += 1
             else:
                 return  # self.__try_to_recover_capture()
 
@@ -305,6 +309,7 @@ class ZDCurtain(QMainWindow, design.Ui_MainWindow):
         self.is_load_being_removed = False
         self.in_black_screen = False
         self.black_level = 1.0
+        self.blacklevel_entropy = 100.0
         self.is_frame_black = False
         self.last_black_screen_time = 0
         self.load_confidence_delta = 0
@@ -432,11 +437,18 @@ def perform_load_removal_logic(self):
 
     check_load_cooldown(self)
 
-    if self.black_level < self.settings_dict["black_threshold"] and not self.in_black_screen:
+    if (
+        self.black_level < self.settings_dict["black_threshold"]
+        and self.blacklevel_entropy < self.settings_dict["black_entropy_threshold"]
+        and not self.in_black_screen
+    ):
         self.in_black_screen = True
         self.black_screen_detected_at_timestamp = perf_counter_ns()
 
-    if self.black_level >= self.settings_dict["black_threshold"] and self.in_black_screen:
+    if (
+        self.black_level >= self.settings_dict["black_threshold"]
+        or self.blacklevel_entropy >= self.settings_dict["black_entropy_threshold"]
+    ) and self.in_black_screen:
         self.black_screen_over_detected_at_timestamp = perf_counter_ns()
         self.in_black_screen = False
 
@@ -487,7 +499,7 @@ def perform_black_level_analysis(self, capture: MatLike | None):
     if not is_valid_image(capture):
         return
 
-    self.is_frame_black, self.black_level = is_black(capture)
+    self.black_level, self.blacklevel_entropy = calculate_uniform_black_level(capture)
 
     self.black_level = self.black_level / 255.0 * 100
 
@@ -611,8 +623,7 @@ def update_labels(self):  # noqa: PLR0912, PLR0915
     self.capture_region_window_label.setText(capture_region_window_label)
 
     self.image_black_label.setText(
-        f"Current black level {self.black_level:.4f}, "
-        + f"threshold {self.settings_dict['black_threshold']:.1f}%  "
+        f"Current black level {self.black_level:.4f}%, entropy {self.blacklevel_entropy:.4f}%"
     )
 
     self.similarity_to_elevator_label.setText(
@@ -640,7 +651,10 @@ def update_labels(self):  # noqa: PLR0912, PLR0915
         + f"max {self.similarity_to_end_screen_max:.4f}%)"
     )
 
-    if self.black_level < self.settings_dict["black_threshold"]:
+    if (
+        self.black_level < self.settings_dict["black_threshold"]
+        and self.blacklevel_entropy < self.settings_dict["black_entropy_threshold"]
+    ):
         self.black_indicator_label.setStyleSheet("background-color: green")
     else:
         self.black_indicator_label.setStyleSheet("background-color: red")

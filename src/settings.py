@@ -51,6 +51,8 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         match key:
             case "black_threshold":
                 self.__set_value("black_threshold", value)
+            case "black_entropy_threshold":
+                self.__set_value("black_threshold", value)
             case "load_confidence_threshold":
                 self.__set_value("load_confidence_threshold_ms", value)
             case "similarity_threshold_elevator":
@@ -85,9 +87,7 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         self.capture_device_combobox.setEnabled(is_video_capture_device)
         if is_video_capture_device:
             self.capture_device_combobox.setCurrentIndex(
-                self.get_capture_device_index(
-                    self._zdcurtain_ref.settings_dict["capture_device_id"]
-                )
+                self.get_capture_device_index(self._zdcurtain_ref.settings_dict["capture_device_id"])
             )
         else:
             self.capture_device_combobox.setPlaceholderText('Select "Video Capture Device" above')
@@ -109,10 +109,7 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         capture_device = self.__video_capture_devices[device_index]
         self._zdcurtain_ref.settings_dict["capture_device_name"] = capture_device.name
         self._zdcurtain_ref.settings_dict["capture_device_id"] = capture_device.device_id
-        if (
-            self._zdcurtain_ref.settings_dict["capture_method"]
-            == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE
-        ):
+        if self._zdcurtain_ref.settings_dict["capture_method"] == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE:
             # Re-initializes the VideoCaptureDeviceCaptureMethod
             change_capture_method(CaptureMethodEnum.VIDEO_CAPTURE_DEVICE, self._zdcurtain_ref)
 
@@ -147,37 +144,29 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
             )
             hotkey_input.setText(self._zdcurtain_ref.settings_dict.get(f"{hotkey}_hotkey", ""))
 
-            set_hotkey_hotkey_button.clicked.connect(
-                partial(set_hotkey, self._zdcurtain_ref, hotkey=hotkey)
-            )
+            set_hotkey_hotkey_button.clicked.connect(partial(set_hotkey, self._zdcurtain_ref, hotkey=hotkey))
 
         # region Set initial values
         # Capture Settings
         self.fps_limit_spinbox.setValue(self._zdcurtain_ref.settings_dict["fps_limit"])
-        self.live_capture_region_checkbox.setChecked(
-            self._zdcurtain_ref.settings_dict["live_capture_region"]
-        )
+        self.live_capture_region_checkbox.setChecked(self._zdcurtain_ref.settings_dict["live_capture_region"])
         self.capture_method_combobox.setCurrentIndex(
             CAPTURE_METHODS.get_index(self._zdcurtain_ref.settings_dict["capture_method"])
         )
 
         # Image Analysis Settings
-        self.black_threshold_spinbox.setValue(self._zdcurtain_ref.settings_dict["black_threshold"])
+        self.black_screen_threshold_spinbox.setValue(self._zdcurtain_ref.settings_dict["black_threshold"])
         self.load_confidence_threshold_spinbox.setValue(
             self._zdcurtain_ref.settings_dict["load_confidence_threshold_ms"]
         )
         self.elevator_similarity_spinbox.setValue(
             self._zdcurtain_ref.settings_dict["similarity_threshold_elevator"]
         )
-        self.tram_similarity_spinbox.setValue(
-            self._zdcurtain_ref.settings_dict["similarity_threshold_tram"]
-        )
+        self.tram_similarity_spinbox.setValue(self._zdcurtain_ref.settings_dict["similarity_threshold_tram"])
         self.teleportal_similarity_spinbox.setValue(
             self._zdcurtain_ref.settings_dict["similarity_threshold_teleportal"]
         )
-        self.egg_similarity_spinbox.setValue(
-            self._zdcurtain_ref.settings_dict["similarity_threshold_egg"]
-        )
+        self.egg_similarity_spinbox.setValue(self._zdcurtain_ref.settings_dict["similarity_threshold_egg"])
         # endregion
 
         # region Binding
@@ -195,9 +184,14 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         self.capture_device_combobox.currentIndexChanged.connect(self.__capture_device_changed)
 
         # Image Analysis Settings
-        self.black_threshold_spinbox.valueChanged.connect(
+        self.black_screen_threshold_spinbox.valueChanged.connect(
             lambda: self.__update_default_threshold(
-                "black_threshold", self.black_threshold_spinbox.value()
+                "black_threshold", self.black_screen_threshold_spinbox.value()
+            )
+        )
+        self.black_screen_entropy_threshold_spinbox.valueChanged.connect(
+            lambda: self.__update_default_threshold(
+                "black_entropy_threshold", self.black_screen_entropy_threshold_spinbox.value()
             )
         )
         self.load_confidence_threshold_spinbox.valueChanged.connect(
@@ -255,7 +249,8 @@ def get_default_settings_from_ui(zdcurtain: "ZDCurtain"):
         "captured_window_title": "",
         "pause_hotkey": default_settings_dialog.pause_input.text(),
         "start_tracking_automatically": default_settings_dialog.start_tracking_automatically_checkbox.isChecked(),
-        "black_threshold": default_settings_dialog.black_threshold_spinbox.value(),
+        "black_threshold": default_settings_dialog.black_screen_threshold_spinbox.value(),
+        "black_entropy_threshold": default_settings_dialog.black_screen_entropy_threshold_spinbox.value(),
         "similarity_algorithm_elevator": DEFAULT_PROFILE["similarity_algorithm_elevator"],
         "similarity_algorithm_tram": DEFAULT_PROFILE["similarity_algorithm_tram"],
         "similarity_algorithm_teleportal": DEFAULT_PROFILE["similarity_algorithm_teleportal"],
@@ -264,15 +259,11 @@ def get_default_settings_from_ui(zdcurtain: "ZDCurtain"):
         "similarity_use_normalized_capture_elevator": DEFAULT_PROFILE[
             "similarity_use_normalized_capture_elevator"
         ],
-        "similarity_use_normalized_capture_tram": DEFAULT_PROFILE[
-            "similarity_use_normalized_capture_tram"
-        ],
+        "similarity_use_normalized_capture_tram": DEFAULT_PROFILE["similarity_use_normalized_capture_tram"],
         "similarity_use_normalized_capture_teleportal": DEFAULT_PROFILE[
             "similarity_use_normalized_capture_teleportal"
         ],
-        "similarity_use_normalized_capture_egg": DEFAULT_PROFILE[
-            "similarity_use_normalized_capture_egg"
-        ],
+        "similarity_use_normalized_capture_egg": DEFAULT_PROFILE["similarity_use_normalized_capture_egg"],
         "similarity_use_normalized_capture_end_screen": DEFAULT_PROFILE[
             "similarity_use_normalized_capture_end_screen"
         ],
@@ -318,11 +309,25 @@ def build_documentation(self):
     black_threshold_tooltip = (
         "Tolerance for black screen loads. The lower the value, the\n"
         + "closer the screen needs to be to pure black for ZDCurtain\n"
-        + "to recognize the load."
+        + "to recognize the load.\n\n"
+        + "Use in conjunction with the Black Screen Entropy Threshold\n"
+        + "to recognize black screens regardless of individual hardware\n"
+        + "black level."
     )
 
-    self.black_threshold_label.setToolTip(black_threshold_tooltip)
-    self.black_threshold_spinbox.setToolTip(black_threshold_tooltip)
+    self.black_screen_threshold_label.setToolTip(black_threshold_tooltip)
+    self.black_screen_threshold_spinbox.setToolTip(black_threshold_tooltip)
+
+    black_entropy_threshold_tooltip = (
+        "Uniformity tolerance for black screen loads. The lower the value,\n"
+        + "the closer the screen needs to be to the same color for ZDCurtain\n"
+        + "to recognize the load.\n\n"
+        + "Set this value low to keep white screens from being recognized\n"
+        + "as loads."
+    )
+
+    self.black_screen_entropy_threshold_label.setToolTip(black_entropy_threshold_tooltip)
+    self.black_screen_entropy_threshold_spinbox.setToolTip(black_entropy_threshold_tooltip)
 
     load_confidence_threshold_tooltip = (
         "Threshold in milliseconds for ZDCurtain to recognize an area\n"

@@ -27,6 +27,7 @@ class UserProfileDict(TypedDict):
     pause_hotkey: str
     start_tracking_automatically: bool
     black_threshold: float
+    black_entropy_threshold: float
     similarity_algorithm_elevator: str
     similarity_algorithm_tram: str
     similarity_algorithm_teleportal: str
@@ -64,8 +65,9 @@ DEFAULT_PROFILE = UserProfileDict(
     captured_window_title="",
     pause_hotkey="",
     start_tracking_automatically=True,
-    black_threshold=0.2,
-    similarity_algorithm_elevator="histogram",
+    black_threshold=20,
+    black_entropy_threshold=2,
+    similarity_algorithm_elevator="l2norm",
     similarity_algorithm_tram="l2norm",
     similarity_algorithm_teleportal="l2norm",
     similarity_algorithm_egg="l2norm",

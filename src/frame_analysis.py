@@ -3,19 +3,26 @@ from math import floor, sqrt
 import cv2
 import numpy as np
 from cv2.typing import MatLike
+from skimage.measure import shannon_entropy
 
 from utils import MAXBYTE, ColorChannel, is_valid_image
 
 
-def is_black(capture: MatLike | None):
-    """Detect if the provided frame source is black."""
+def calculate_uniform_black_level(capture: MatLike | None):
+    """Get the average black level and entropy of the provided capture."""
     if not is_valid_image(capture):
         return False, 0.0
 
     gray = cv2.cvtColor(capture, cv2.COLOR_BGR2GRAY)
     average = np.average(gray)
 
-    return average < BLACK_THRESHOLD, average
+    bins = 128
+    hist, _ = np.histogram(gray.ravel(), bins=bins, range=(0, bins))
+
+    prob_dist = hist / hist.sum()
+    image_entropy = shannon_entropy(prob_dist, base=2) / 7 * 100  # min 0, max log(bins) = 7
+
+    return average, image_entropy
 
 
 def crop_image(capture: MatLike | None, x1, y1, x2, y2):
@@ -42,7 +49,6 @@ RANGES = (0, MAXRANGE, 0, MAXRANGE, 0, MAXRANGE)
 MASK_SIZE_MULTIPLIER = ColorChannel.Alpha * MAXBYTE * MAXBYTE
 MAX_VALUE = 1.0
 CV2_PHASH_SIZE = 8
-BLACK_THRESHOLD = 1
 
 
 def compare_histograms(source: MatLike, capture: MatLike, mask: MatLike | None = None):

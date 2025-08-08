@@ -17,9 +17,7 @@ if sys.platform == "win32":
 
     from capture_method.BitBltCaptureMethod import BitBltCaptureMethod
     from capture_method.DesktopDuplicationCaptureMethod import DesktopDuplicationCaptureMethod
-    from capture_method.ForceFullContentRenderingCaptureMethod import (
-        ForceFullContentRenderingCaptureMethod,
-    )
+    from capture_method.ForceFullContentRenderingCaptureMethod import ForceFullContentRenderingCaptureMethod
     from capture_method.WindowsGraphicsCaptureMethod import WindowsGraphicsCaptureMethod
 
 if sys.platform == "linux":
@@ -129,9 +127,7 @@ if sys.platform == "win32":
         pass
     else:
         CAPTURE_METHODS[CaptureMethodEnum.DESKTOP_DUPLICATION] = DesktopDuplicationCaptureMethod
-    CAPTURE_METHODS[CaptureMethodEnum.PRINTWINDOW_RENDERFULLCONTENT] = (
-        ForceFullContentRenderingCaptureMethod
-    )
+    CAPTURE_METHODS[CaptureMethodEnum.PRINTWINDOW_RENDERFULLCONTENT] = ForceFullContentRenderingCaptureMethod
 elif sys.platform == "linux":
     if features.check_feature(feature="xcb"):
         CAPTURE_METHODS[CaptureMethodEnum.XCB] = XcbCaptureMethod
@@ -166,7 +162,7 @@ def change_capture_method(selected_capture_method: CaptureMethodEnum, zdcurtain:
             )
 
     if zdcurtain.settings_dict["start_tracking_automatically"]:
-        zdcurtain.is_tracking = True
+        zdcurtain.begin_tracking()
 
     # disable_selection_buttons = selected_capture_method == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE
     # zdcurtain.select_region_button.setDisabled(disable_selection_buttons)
@@ -221,10 +217,6 @@ def get_all_video_capture_devices():
         #     video_capture.release()
 
         resolution = get_input_device_resolution(index)
-        return (
-            CameraInfo(index, device_name, False, backend, resolution)
-            if resolution is not None
-            else None
-        )
+        return CameraInfo(index, device_name, False, backend, resolution) if resolution is not None else None
 
     return list(filter(None, starmap(get_camera_info, enumerate(named_video_inputs))))
