@@ -394,8 +394,6 @@ def check_if_load_ending(self):
         self.black_screen_over_detected_at_timestamp > self.confirmed_load_detected_at_timestamp
         and self.is_load_being_removed
     ):
-        send_command(self, "pause")
-
         if self.active_load_type not in {"none", "black"}:  # noqa: SIM102 need self.active_load_type
             if (
                 self.load_cooldown_type == "none"
@@ -411,6 +409,8 @@ def check_if_load_ending(self):
                 self.load_confidence_delta
                 + (self.black_screen_over_detected_at_timestamp - self.confirmed_load_detected_at_timestamp)
             )
+
+            send_command(self, "pause")
 
             self.load_time_removed_ms += self.single_load_time_removed_ms
 
