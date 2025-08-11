@@ -501,7 +501,7 @@
      <double>0.100000000000000</double>
     </property>
     <property name="value">
-     <double>3.000000000000000</double>
+     <double>10.000000000000000</double>
     </property>
    </widget>
   </widget>
@@ -567,9 +567,9 @@
    <property name="geometry">
     <rect>
      <x>311</x>
-     <y>80</y>
+     <y>155</y>
      <width>341</width>
-     <height>61</height>
+     <height>101</height>
     </rect>
    </property>
    <property name="title">
@@ -592,6 +592,87 @@
     </property>
     <property name="tristate">
      <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="clear_previous_session_on_begin_tracking_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>55</y>
+      <width>311</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Clear previous load tracking session
+ when &quot;Begin Tracking&quot; is pressed?</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+    <property name="tristate">
+     <bool>false</bool>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="locations_groupbox">
+   <property name="geometry">
+    <rect>
+     <x>311</x>
+     <y>80</y>
+     <width>341</width>
+     <height>71</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Locations</string>
+   </property>
+   <widget class="QLabel" name="locations_screenshot_folder_labell">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>32</y>
+      <width>97</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Screenshot Folder:</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="locations_screenshot_folder_input">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>30</y>
+      <width>181</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="locations_screenshot_folder_button">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>309</x>
+      <y>30</y>
+      <width>21</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>...</string>
     </property>
    </widget>
   </widget>

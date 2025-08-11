@@ -6,7 +6,7 @@ from PySide6 import QtWidgets
 from utils import ZDCURTAIN_VERSION
 
 if TYPE_CHECKING:
-    from ZDCurtain import ZDCurtain
+    from ui.zdcurtain_ui import ZDCurtain
 
 
 class __AboutWidget(QtWidgets.QWidget, about.Ui_AboutZDCurtainWidget):

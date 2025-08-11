@@ -8,13 +8,13 @@ import tomli_w
 from PySide6 import QtWidgets
 
 import error_messages
-import settings
 from capture_method import CAPTURE_METHODS, CaptureMethodEnum, Region, change_capture_method
 from hotkeys import HOTKEYS, Hotkey, remove_all_hotkeys, set_hotkey
+from ui import settings_ui
 from utils import working_directory
 
 if TYPE_CHECKING:
-    from ZDCurtain import ZDCurtain
+    from ui.zdcurtain_ui import ZDCurtain
 
 
 class UserProfileDict(TypedDict):
@@ -26,18 +26,21 @@ class UserProfileDict(TypedDict):
     captured_window_title: str
     pause_hotkey: str
     start_tracking_automatically: bool
+    clear_previous_session_on_begin_tracking: bool
+    hide_analysis_elements: bool
     black_threshold: float
     black_entropy_threshold: float
+    capture_view_preview: str
+    capture_view_elevator: str
+    capture_view_tram: str
+    capture_view_teleportal: str
+    capture_view_egg: str
+    capture_view_end_screen: str
     similarity_algorithm_elevator: str
     similarity_algorithm_tram: str
     similarity_algorithm_teleportal: str
     similarity_algorithm_egg: str
     similarity_algorithm_end_screen: str
-    similarity_use_normalized_capture_elevator: bool
-    similarity_use_normalized_capture_tram: bool
-    similarity_use_normalized_capture_teleportal: bool
-    similarity_use_normalized_capture_egg: bool
-    similarity_use_normalized_capture_end_screen: bool
     similarity_threshold_elevator: int
     similarity_threshold_tram: int
     similarity_threshold_teleportal: int
@@ -48,7 +51,9 @@ class UserProfileDict(TypedDict):
     load_cooldown_teleportal_ms: int
     load_cooldown_egg_ms: int
     load_confidence_threshold_ms: int
+    screenshot_directory: str
     capture_region: Region
+    black_screen_detection_region: Region
 
     @override
     @deprecated("Use `copy.deepcopy` instead")
@@ -65,18 +70,21 @@ DEFAULT_PROFILE = UserProfileDict(
     captured_window_title="",
     pause_hotkey="",
     start_tracking_automatically=True,
+    clear_previous_session_on_begin_tracking=True,
+    hide_analysis_elements=False,
     black_threshold=20,
     black_entropy_threshold=2,
+    capture_view_preview="standard_resized",
+    capture_view_elevator="normalized_resized",
+    capture_view_tram="standard_resized",
+    capture_view_teleportal="standard_resized",
+    capture_view_egg="standard_resized",
+    capture_view_end_screen="standard_resized",
     similarity_algorithm_elevator="l2norm",
     similarity_algorithm_tram="l2norm",
     similarity_algorithm_teleportal="l2norm",
     similarity_algorithm_egg="l2norm",
     similarity_algorithm_end_screen="l2norm",
-    similarity_use_normalized_capture_elevator=True,
-    similarity_use_normalized_capture_tram=False,
-    similarity_use_normalized_capture_teleportal=False,
-    similarity_use_normalized_capture_egg=False,
-    similarity_use_normalized_capture_end_screen=False,
     similarity_threshold_elevator=90,
     similarity_threshold_tram=87,
     similarity_threshold_teleportal=89,
@@ -87,7 +95,9 @@ DEFAULT_PROFILE = UserProfileDict(
     load_cooldown_teleportal_ms=0,
     load_cooldown_egg_ms=3000,
     load_confidence_threshold_ms=500,
+    screenshot_directory="",
     capture_region=Region(x=0, y=0, width=1, height=1),
+    black_screen_detection_region=Region(x=0, y=0, width=640, height=134),
 )
 
 
@@ -150,7 +160,7 @@ def __load_settings_from_file(zdcurtain: "ZDCurtain", load_settings_file_path: s
         zdcurtain.settings_dict = UserProfileDict(**loaded_settings)
         zdcurtain.last_saved_settings = deepcopy(zdcurtain.settings_dict)
 
-        if zdcurtain.settings_dict["start_tracking_automatically"]:
+        if not zdcurtain.is_tracking and zdcurtain.settings_dict["start_tracking_automatically"]:
             zdcurtain.begin_tracking()
 
     except (FileNotFoundError, MemoryError, TypeError, tomllib.TOMLDecodeError):
@@ -179,7 +189,7 @@ def __load_settings_from_file(zdcurtain: "ZDCurtain", load_settings_file_path: s
         )
 
     if settings_widget_was_open:
-        settings.open_settings(zdcurtain)
+        settings_ui.open_settings(zdcurtain)
 
     return True
 

@@ -12,7 +12,7 @@ from PySide6 import QtCore, QtWidgets
 from utils import FROZEN, GITHUB_REPOSITORY
 
 if TYPE_CHECKING:
-    from ZDCurtain import ZDCurtain
+    from ui.zdcurtain_ui import ZDCurtain
 
 
 def __exit_program():
@@ -52,8 +52,7 @@ def set_text_message(
 
 def already_open():
     set_text_message(
-        "An instance of ZDCurtain is already running."
-        + "<br/>Are you sure you want to open another one?",
+        "An instance of ZDCurtain is already running." + "<br/>Are you sure you want to open another one?",
         "",
         "Don't open",
         "Ignore",

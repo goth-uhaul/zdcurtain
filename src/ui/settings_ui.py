@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from gen import settings as settings_ui
 from PySide6 import QtWidgets
+from PySide6.QtWidgets import QFileDialog
 
 from capture_method import (
     CAPTURE_METHODS,
@@ -16,7 +17,7 @@ from user_profile import DEFAULT_PROFILE, UserProfileDict
 from utils import ONE_SECOND, fire_and_forget
 
 if TYPE_CHECKING:
-    from ZDCurtain import ZDCurtain
+    from ui.zdcurtain_ui import ZDCurtain
 
 
 class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
@@ -48,21 +49,7 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         self.show()
 
     def __update_default_threshold(self, key: str, value: Any):
-        match key:
-            case "black_threshold":
-                self.__set_value("black_threshold", value)
-            case "black_entropy_threshold":
-                self.__set_value("black_threshold", value)
-            case "load_confidence_threshold":
-                self.__set_value("load_confidence_threshold_ms", value)
-            case "similarity_threshold_elevator":
-                self.__set_value("similarity_threshold_elevator", value)
-            case "similarity_threshold_tram":
-                self.__set_value("similarity_threshold_tram", value)
-            case "similarity_threshold_teleportal":
-                self.__set_value("similarity_threshold_teleportal", value)
-            case "similarity_threshold_egg":
-                self.__set_value("similarity_threshold_egg", value)
+        self.__set_value(key, value)
 
     def __set_value(self, key: str, value: Any):
         self._zdcurtain_ref.settings_dict[key] = value
@@ -134,6 +121,14 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         else:
             self.capture_device_combobox.setPlaceholderText("No device found.")
 
+    def set_screenshot_location(self):
+        selected_directory = QFileDialog.getExistingDirectory()
+
+        if selected_directory:
+            self._zdcurtain_ref.settings_dict["screenshot_directory"] = selected_directory
+        else:
+            self._zdcurtain_ref.settings_dict["screenshot_directory"] = ""
+
     def __setup_bindings(self):
         # Hotkey initial values and bindings
         for hotkey in HOTKEYS:
@@ -156,6 +151,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
 
         # Image Analysis Settings
         self.black_screen_threshold_spinbox.setValue(self._zdcurtain_ref.settings_dict["black_threshold"])
+        self.black_screen_entropy_threshold_spinbox.setValue(
+            self._zdcurtain_ref.settings_dict["black_entropy_threshold"]
+        )
         self.load_confidence_threshold_spinbox.setValue(
             self._zdcurtain_ref.settings_dict["load_confidence_threshold_ms"]
         )
@@ -167,6 +165,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
             self._zdcurtain_ref.settings_dict["similarity_threshold_teleportal"]
         )
         self.egg_similarity_spinbox.setValue(self._zdcurtain_ref.settings_dict["similarity_threshold_egg"])
+        self.start_tracking_automatically_checkbox.setChecked(
+            self._zdcurtain_ref.settings_dict["start_tracking_automatically"]
+        )
         # endregion
 
         # region Binding
@@ -219,13 +220,33 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 "similarity_threshold_egg", self.egg_similarity_spinbox.value()
             )
         )
-
+        self.end_screen_similarity_spinbox.valueChanged.connect(
+            lambda: self.__update_default_threshold(
+                "similarity_threshold_end_screen", self.end_screen_similarity_spinbox.value()
+            )
+        )
         self.start_tracking_automatically_checkbox.stateChanged.connect(
             lambda: self.__set_value(
                 "start_tracking_automatically",
                 self.start_tracking_automatically_checkbox.isChecked(),
             )
         )
+        self.clear_previous_session_on_begin_tracking_label.stateChanged.connect(
+            lambda: self.__set_value(
+                "reset_all_variables_on_begin_tracking",
+                self.clear_previous_session_on_begin_tracking_label.isChecked(),
+            )
+        )
+        self.live_capture_region_checkbox.stateChanged.connect(
+            lambda: self.__set_value(
+                "live_capture_region",
+                self.live_capture_region_checkbox.isChecked(),
+            )
+        )
+
+        # screenshots
+        self.locations_screenshot_folder_button.clicked.connect(self.set_screenshot_location)
+
         # endregion
 
 
@@ -234,7 +255,7 @@ def open_settings(zdcurtain: "ZDCurtain"):
         zdcurtain.SettingsWidget = __SettingsWidget(zdcurtain)
 
 
-def get_default_settings_from_ui(zdcurtain: "ZDCurtain"):
+def get_default_settings_from_ui():
     temp_dialog = QtWidgets.QWidget()
     default_settings_dialog = settings_ui.Ui_SettingsWidget()
     default_settings_dialog.setupUi(temp_dialog)
@@ -248,25 +269,22 @@ def get_default_settings_from_ui(zdcurtain: "ZDCurtain"):
         "capture_device_name": "",
         "captured_window_title": "",
         "pause_hotkey": default_settings_dialog.pause_input.text(),
-        "start_tracking_automatically": default_settings_dialog.start_tracking_automatically_checkbox.isChecked(),
+        "start_tracking_automatically": default_settings_dialog.start_tracking_automatically_checkbox.isChecked(),  # noqa: E501
+        "clear_previous_session_on_begin_tracking": default_settings_dialog.clear_previous_session_on_begin_tracking_label.isChecked(),  # noqa: E501
+        "hide_analysis_elements": DEFAULT_PROFILE["hide_analysis_elements"],
         "black_threshold": default_settings_dialog.black_screen_threshold_spinbox.value(),
         "black_entropy_threshold": default_settings_dialog.black_screen_entropy_threshold_spinbox.value(),
+        "capture_view_preview": DEFAULT_PROFILE["capture_view_preview"],
+        "capture_view_elevator": DEFAULT_PROFILE["capture_view_elevator"],
+        "capture_view_tram": DEFAULT_PROFILE["capture_view_tram"],
+        "capture_view_teleportal": DEFAULT_PROFILE["capture_view_teleportal"],
+        "capture_view_egg": DEFAULT_PROFILE["capture_view_egg"],
+        "capture_view_end_screen": DEFAULT_PROFILE["capture_view_end_screen"],
         "similarity_algorithm_elevator": DEFAULT_PROFILE["similarity_algorithm_elevator"],
         "similarity_algorithm_tram": DEFAULT_PROFILE["similarity_algorithm_tram"],
         "similarity_algorithm_teleportal": DEFAULT_PROFILE["similarity_algorithm_teleportal"],
         "similarity_algorithm_egg": DEFAULT_PROFILE["similarity_algorithm_egg"],
         "similarity_algorithm_end_screen": DEFAULT_PROFILE["similarity_algorithm_end_screen"],
-        "similarity_use_normalized_capture_elevator": DEFAULT_PROFILE[
-            "similarity_use_normalized_capture_elevator"
-        ],
-        "similarity_use_normalized_capture_tram": DEFAULT_PROFILE["similarity_use_normalized_capture_tram"],
-        "similarity_use_normalized_capture_teleportal": DEFAULT_PROFILE[
-            "similarity_use_normalized_capture_teleportal"
-        ],
-        "similarity_use_normalized_capture_egg": DEFAULT_PROFILE["similarity_use_normalized_capture_egg"],
-        "similarity_use_normalized_capture_end_screen": DEFAULT_PROFILE[
-            "similarity_use_normalized_capture_end_screen"
-        ],
         "similarity_threshold_elevator": default_settings_dialog.elevator_similarity_spinbox.value(),
         "similarity_threshold_tram": default_settings_dialog.tram_similarity_spinbox.value(),
         "similarity_threshold_teleportal": default_settings_dialog.teleportal_similarity_spinbox.value(),
@@ -277,7 +295,9 @@ def get_default_settings_from_ui(zdcurtain: "ZDCurtain"):
         "load_cooldown_teleportal_ms": DEFAULT_PROFILE["load_cooldown_teleportal_ms"],
         "load_cooldown_egg_ms": DEFAULT_PROFILE["load_cooldown_egg_ms"],
         "load_confidence_threshold_ms": default_settings_dialog.load_confidence_threshold_spinbox.value(),
+        "screenshot_directory": DEFAULT_PROFILE["screenshot_directory"],
         "capture_region": DEFAULT_PROFILE["capture_region"],
+        "black_screen_detection_region": DEFAULT_PROFILE["black_screen_detection_region"],
     }
     del temp_dialog
     return default_settings
@@ -404,4 +424,13 @@ def build_documentation(self):
     )
 
     self.start_tracking_automatically_checkbox.setToolTip(start_tracking_automatically_tooltip)
+
+    clear_previous_session_on_begin_tracking_tooltip = (
+        "If this box is checked, ZDCurtain will automatically clear\n"
+        + "the previous load removal session when starting a new one."
+    )
+
+    self.clear_previous_session_on_begin_tracking_label.setToolTip(
+        clear_previous_session_on_begin_tracking_tooltip
+    )
     # endregion

@@ -1,6 +1,6 @@
 [project]
 name = "zdcurtain"
-version = "0.1.0"
+version = "0.2.0"
 description = "Load time remover for Metroid Dread"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -8,12 +8,17 @@ dependencies = [
     "keyboard>=0.13.5",
     "numpy>=2.3.2",
     "opencv-contrib-python-headless==4.11.0.86",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.1",
+    "pathvalidate>=3.3.1",
     "pyautogui>=0.9.54",
     "pygrabber>=0.2",
     "pyinstaller>=6.14.2",
-    "pyside6-essentials>=6.9.1",
+    "pyside6>=6.9.1",
+    "python-dateutil>=2.9.0.post0",
     "pywin32>=311",
     "pywinctl>=0.4.1",
+    "scikit-image>=0.25.2",
     "tomli-w>=1.2.0",
     "typed-d3dshot>=1.0.1",
     "winrt-windows-foundation>=3.2.1",

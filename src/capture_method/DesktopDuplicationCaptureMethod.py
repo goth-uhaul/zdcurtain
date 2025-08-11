@@ -14,7 +14,7 @@ from capture_method.BitBltCaptureMethod import BitBltCaptureMethod
 from utils import get_window_bounds
 
 if TYPE_CHECKING:
-    from ZDCurtain import ZDCurtain
+    from ui.zdcurtain_ui import ZDCurtain
 
 
 class DesktopDuplicationCaptureMethod(BitBltCaptureMethod):

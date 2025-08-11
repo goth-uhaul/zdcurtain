@@ -5,7 +5,7 @@ from cv2.typing import MatLike
 from utils import is_valid_hwnd
 
 if TYPE_CHECKING:
-    from ZDCurtain import ZDCurtain
+    from ui.zdcurtain_ui import ZDCurtain
 
 
 class CaptureMethodBase:

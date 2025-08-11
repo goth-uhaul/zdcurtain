@@ -13,18 +13,13 @@ from utils import get_window_bounds, is_valid_hwnd
 if sys.platform == "win32":
     import win32api
     import win32gui
-    from win32con import (
-        SM_CXVIRTUALSCREEN,
-        SM_CYVIRTUALSCREEN,
-        SM_XVIRTUALSCREEN,
-        SM_YVIRTUALSCREEN,
-    )
+    from win32con import SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN
 
 if sys.platform == "linux":
     from Xlib.display import Display
 
 if TYPE_CHECKING:
-    from ZDCurtain import ZDCurtain
+    from ui.zdcurtain_ui import ZDCurtain
 
 
 def get_top_window_at(x: int, y: int):

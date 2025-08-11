@@ -6,13 +6,15 @@ $ProjectRoot = "$PSScriptRoot/.."
 $SupportsSplashScreen = [System.Convert]::ToBoolean($(uv run --active python -c "import _tkinter; print(hasattr(_tkinter, '__file__'))"))
 
 $arguments = @(
-  "$ProjectRoot/src/ZDCurtain.py",
+  "$ProjectRoot/src/App.py",
+  '--name ZDCurtain'
   '--onefile',
   '--windowed',
   '--optimize=2', # Remove asserts and docstrings for smaller build
   "--additional-hooks-dir=$ProjectRoot/Pyinstaller/hooks",
   "--add-data=$ProjectRoot/pyproject.toml$([System.IO.Path]::PathSeparator).",
   "--add-data=$ProjectRoot/res/comparison/*.png:res/comparison/",
+  "--add-data=$ProjectRoot/res/*.png:res/",
   "--upx-dir=$PSScriptRoot/.upx"
   "--icon=$ProjectRoot/res/icon.ico")
 if ($SupportsSplashScreen) {

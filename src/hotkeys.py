@@ -9,7 +9,7 @@ import error_messages
 from utils import fire_and_forget, is_digit
 
 if TYPE_CHECKING:
-    from ZDCurtain import ZDCurtain
+    from ui.zdcurtain_ui import ZDCurtain
 
 # While not usually recommended, we don't manipulate the mouse, and we don't want the extra delay
 pyautogui.FAILSAFE = False
@@ -109,9 +109,7 @@ def __validate_keypad(expected_key: str, keyboard_event: keyboard.KeyboardEvent)
     if keyboard_event.name and is_digit(keyboard_event.name[-1]):
         # Prevent "regular numbers" and "keypad numbers" from activating each other
         return bool(
-            keyboard_event.is_keypad
-            if expected_key.startswith("num ")
-            else not keyboard_event.is_keypad
+            keyboard_event.is_keypad if expected_key.startswith("num ") else not keyboard_event.is_keypad
         )
 
     # Prevent "keypad action keys" from triggering "regular numbers" and "keypad numbers"
@@ -211,8 +209,7 @@ def __get_hotkey_action(zdcurtain: "ZDCurtain", hotkey: Hotkey):
 
 def is_valid_hotkey_name(hotkey_name: str):
     return any(
-        key and not keyboard.is_modifier(keyboard.key_to_scan_codes(key)[0])
-        for key in hotkey_name.split("+")
+        key and not keyboard.is_modifier(keyboard.key_to_scan_codes(key)[0]) for key in hotkey_name.split("+")
     )
 
 

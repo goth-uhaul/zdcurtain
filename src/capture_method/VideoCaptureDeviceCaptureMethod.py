@@ -11,7 +11,7 @@ from error_messages import CREATE_NEW_ISSUE_MESSAGE, exception_traceback
 from utils import ImageShape, get_input_device_resolution, is_valid_image
 
 if TYPE_CHECKING:
-    from ZDCurtain import ZDCurtain
+    from ui.zdcurtain_ui import ZDCurtain
 
 OBS_VIRTUALCAM_PLUGIN_BLANK_PIXEL = (127, 129, 128)
 

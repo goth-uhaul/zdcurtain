@@ -4,6 +4,7 @@ import subprocess  # noqa: S404 no new processes are spawned
 import sys
 import tomllib
 from collections.abc import Callable, Iterable, Sequence
+from datetime import datetime
 from functools import partial
 from pathlib import Path
 from platform import version
@@ -13,7 +14,10 @@ from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar
 import cv2
 import numpy as np
 from cv2.typing import MatLike
+from dateutil.tz import tzlocal
 from gen.build_vars import ZDCURTAIN_BUILD_NUMBER, ZDCURTAIN_GITHUB_REPOSITORY
+from PySide6 import QtGui
+from PySide6.QtWidgets import QLabel, QWidget
 
 if sys.platform == "win32":
     import ctypes
@@ -50,6 +54,19 @@ class ColorChannel(IntEnum):
     Green = 1
     Red = 2
     Alpha = 3
+
+
+class LocalTime:
+    def __init__(self):
+        timezone_local = tzlocal()
+        datetime_local = datetime.now(timezone_local)
+
+        self.timestamp = datetime_local.timestamp()
+        self.date = datetime_local.isoformat()
+        self.timeZone = timezone_local.tzname(datetime_local)
+
+    def to_dict(self):
+        return {"date": self.date, "timestamp": self.timestamp, "timezone": self.timeZone}
 
 
 def resource_path(relative_path: "StrPath"):
@@ -207,9 +224,9 @@ def list_processes():
         return [
             # The first row is the process name
             line.split()[0]
-            for line in subprocess.check_output(
-                "C:/Windows/System32/tasklist.exe", text=True
-            ).splitlines()[3:]  # Skip the table header lines
+            for line in subprocess.check_output("C:/Windows/System32/tasklist.exe", text=True).splitlines()[
+                3:
+            ]  # Skip the table header lines
             if line
         ]
 
@@ -219,7 +236,7 @@ def list_processes():
     ).splitlines()[1:]  # Skip the header line
 
 
-def imread(filename: str, flags: int = cv2.IMREAD_COLOR):
+def imread(filename: str, flags: int = cv2.IMREAD_COLOR_RGB):
     return cv2.imdecode(np.fromfile(filename, dtype=np.uint8), flags)
 
 
@@ -228,6 +245,36 @@ def imwrite(filename: str, img: MatLike, params: Sequence[int] = ()):
     if not success:
         raise OSError(f"cv2 could not write to path {filename}")
     encoded_img.tofile(filename)
+
+
+def get_widget_position(widget: QWidget) -> tuple[int, int]:
+    geometry = widget.geometry()
+    return geometry.x(), geometry.y()
+
+
+def move_widget(widget: QWidget, x: int, y: int):
+    widget.move(x, y)
+
+
+def get_version():
+    return ZDCURTAIN_VERSION
+
+
+def create_icon(qlabel: QLabel, image: MatLike | None):
+    if not is_valid_image(image):
+        # Clear current pixmap if no image. But don't clear text
+        if not qlabel.text():
+            qlabel.clear()
+    else:
+        height, width, channels = image.shape
+
+        if channels == BGRA_CHANNEL_COUNT:
+            image_format = QtGui.QImage.Format.Format_RGBA8888
+        else:
+            image_format = QtGui.QImage.Format.Format_BGR888
+
+        qimage = QtGui.QImage(image.data, width, height, width * channels, image_format)
+        qlabel.setPixmap(QtGui.QPixmap(qimage))
 
 
 def check_if_image_has_transparency(image: MatLike):

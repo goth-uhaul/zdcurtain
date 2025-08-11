@@ -150,6 +150,21 @@
     </item>
     <item>
      <property name="text">
+      <string>openpyxl</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>pandas</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>pathvalidate</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
       <string>pyautogui</string>
      </property>
     </item>
@@ -165,7 +180,12 @@
     </item>
     <item>
      <property name="text">
-      <string>pyside6-essentials</string>
+      <string>pyside6</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>python-dateutil</string>
      </property>
     </item>
     <item>
@@ -176,6 +196,16 @@
     <item>
      <property name="text">
       <string>pywinctl</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>ruff</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>scikit-image</string>
      </property>
     </item>
     <item>

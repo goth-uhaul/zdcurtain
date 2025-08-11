@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from math import floor, sqrt
 
 import cv2
@@ -8,21 +9,25 @@ from skimage.measure import shannon_entropy
 from utils import MAXBYTE, ColorChannel, is_valid_image
 
 
-def calculate_uniform_black_level(capture: MatLike | None):
+def calculate_frame_luminance(capture: MatLike | None) -> tuple[float, float]:
     """Get the average black level and entropy of the provided capture."""
     if not is_valid_image(capture):
-        return False, 0.0
+        return 0.0, 0.0
 
     gray = cv2.cvtColor(capture, cv2.COLOR_BGR2GRAY)
-    average = np.average(gray)
+    average_luminance = np.average(gray)
 
     bins = 128
     hist, _ = np.histogram(gray.ravel(), bins=bins, range=(0, bins))
 
-    prob_dist = hist / hist.sum()
+    prob_dist = 0
+
+    if hist.sum() > 0:
+        prob_dist = hist / hist.sum()
+
     image_entropy = shannon_entropy(prob_dist, base=2) / 7 * 100  # min 0, max log(bins) = 7
 
-    return average, image_entropy
+    return average_luminance, image_entropy  # type: ignore - pyright float checking is bad
 
 
 def crop_image(capture: MatLike | None, x1, y1, x2, y2):
@@ -158,7 +163,7 @@ def __compare_dummy(*_: object):
     return 0.0
 
 
-def get_comparison_method_by_name(comparison_method_name: str):
+def get_comparison_method_by_name(comparison_method_name: str) -> Callable:
     match comparison_method_name:
         case "l2norm":
             return compare_l2_norm

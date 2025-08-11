@@ -2,4 +2,4 @@
 
 param ([string]$p1)
 & "$PSScriptRoot/compile_resources.ps1"
-uv run --active "$PSScriptRoot/../src/ZDCurtain.py" $p1
+uv run --active "$PSScriptRoot/../src/App.py" $p1
