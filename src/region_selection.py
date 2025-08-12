@@ -78,6 +78,8 @@ def select_window(zdcurtain: "ZDCurtain"):
         height=client_height - border_width * 2,
     )
 
+    zdcurtain.capture_state_changed_signal.emit()
+
 
 def __set_region_values(zdcurtain: "ZDCurtain", x: int, y: int, width: int, height: int):
     zdcurtain.settings_dict["capture_region"]["x"] = x

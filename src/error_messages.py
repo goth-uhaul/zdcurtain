@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, NoReturn
 
 from PySide6 import QtCore, QtWidgets
 
-from utils import FROZEN, GITHUB_REPOSITORY
+from utils import FROZEN, GITHUB_REPOSITORY, LocalTime
 
 if TYPE_CHECKING:
     from ui.zdcurtain_ui import ZDCurtain
@@ -57,6 +57,21 @@ def already_open():
         "Don't open",
         "Ignore",
     )
+
+
+def capture_stream_lost_during_load(_load_lost_at: LocalTime):
+    set_text_message(
+        "Could not track in progress load due to capture stream being lost.\n\n"
+        + f"The load was lost at {_load_lost_at.date}."
+    )
+
+
+def capture_stream_lost():
+    set_text_message("Capture stream was lost.")
+
+
+def couldnt_find_capture_to_recover():
+    set_text_message("Couldn't find a capture stream to recover. Please re-select your window or device.")
 
 
 def invalid_settings():

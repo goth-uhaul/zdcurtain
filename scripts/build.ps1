@@ -14,7 +14,7 @@ $arguments = @(
   "--additional-hooks-dir=$ProjectRoot/Pyinstaller/hooks",
   "--add-data=$ProjectRoot/pyproject.toml$([System.IO.Path]::PathSeparator).",
   "--add-data=$ProjectRoot/res/comparison/*.png:res/comparison/",
-  "--add-data=$ProjectRoot/res/*.png:res/",
+  "--add-data=$ProjectRoot/res/icons/*.png:res/",
   "--upx-dir=$PSScriptRoot/.upx"
   "--icon=$ProjectRoot/res/icon.ico")
 if ($SupportsSplashScreen) {

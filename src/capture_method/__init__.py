@@ -164,9 +164,14 @@ def change_capture_method(selected_capture_method: CaptureMethodEnum, zdcurtain:
     if zdcurtain.settings_dict["start_tracking_automatically"]:
         zdcurtain.begin_tracking()
 
-    # disable_selection_buttons = selected_capture_method == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE
-    # zdcurtain.select_region_button.setDisabled(disable_selection_buttons)
-    # zdcurtain.select_window_button.setDisabled(disable_selection_buttons)
+    zdcurtain.capture_state_changed_signal.emit()
+
+    if selected_capture_method == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE:
+        zdcurtain.select_window_button.setDisabled(True)
+        zdcurtain.select_device_button.setDisabled(False)
+    else:
+        zdcurtain.select_window_button.setDisabled(False)
+        zdcurtain.select_device_button.setDisabled(True)
 
 
 @dataclass

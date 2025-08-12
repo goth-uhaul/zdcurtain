@@ -11,11 +11,9 @@ class LoadRemovalSession:
     def __init__(self):
         now = LocalTime()
         self.loads = []
-        self.sessionInfo = LoadRemovalSessionInfo(now, get_version(), 0)
+        self.sessionInfo = LoadRemovalSessionInfo(now, get_version(), self)
 
     def export_loads(self, data_format, filename):
-        self.sessionInfo.set_load_count(len(self.loads))
-
         match data_format:
             case "json":
                 self.__write_to_json(f"{filename}")
@@ -32,6 +30,13 @@ class LoadRemovalSession:
         self.loads.append(LoadRemovalRecordEntry(load_type, load_time_removed, now))
         return self.loads[len(self.loads) - 1]
 
+    def create_lost_load_record(self, load_type, load_lost_at):
+        self.loads.append(LostLoadEntry(load_type, load_lost_at))
+        return self.loads[len(self.loads) - 1]
+
+    def get_load_count(self):
+        return len(self.loads)
+
     def __write_to_excel(self, filepath, sheet_name):
         df = pd.json_normalize(self.to_dict(), ["loads"])
         return df.to_excel(filepath, sheet_name, index=False)
@@ -47,6 +52,26 @@ class LoadRemovalSession:
         }
 
 
+class LostLoadEntry:
+    def __init__(self, load_type, load_lost_at):
+        self.loadType = load_type
+        self.loadLostAt = load_lost_at
+
+    def to_dict(self):
+        return {
+            "loadTimeRemoved": 0,
+            "loadType": self.loadType,
+            "loadLostAt": self.loadLostAt.to_dict(),
+            "wasLoadLost": "yes",
+        }
+
+    def to_string(self):
+        return (
+            f'[{self.loadLostAt.date}]: WARNING: LOST load of type "{self.loadType}", check your '
+            + "stream to make sure it's stable."
+        )
+
+
 class LoadRemovalRecordEntry:
     def __init__(self, load_type, load_time_removed, load_removed_at):
         self.loadType = load_type
@@ -58,6 +83,7 @@ class LoadRemovalRecordEntry:
             "loadTimeRemoved": self.loadTimeRemoved,
             "loadType": self.loadType,
             "loadRemovedAt": self.loadRemovedAt.to_dict(),
+            "wasLoadLost": "no",
         }
 
     def to_string(self):
@@ -68,19 +94,21 @@ class LoadRemovalRecordEntry:
 
 
 class LoadRemovalSessionInfo:
-    def __init__(self, started_at, created_with_version, load_count):
+    def __init__(
+        self,
+        started_at: LocalTime,
+        created_with_version: str,
+        _load_removal_session_ref: LoadRemovalSession,
+    ):
         self.startedAt = started_at
         self.createdWithVersion = created_with_version
-        self.loadCount = load_count
-
-    def set_load_count(self, load_count):
-        self.loadCount = load_count
+        self.loadRemovalSession = _load_removal_session_ref
 
     def to_dict(self):
         return {
             "startedAt": self.startedAt.to_dict(),
             "createdWithVersion": self.createdWithVersion,
-            "loadCount": self.loadCount,
+            "loadCount": self.loadRemovalSession.get_load_count(),
         }
 
 

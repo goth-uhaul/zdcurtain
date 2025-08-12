@@ -594,7 +594,7 @@
      <bool>false</bool>
     </property>
    </widget>
-   <widget class="QCheckBox" name="clear_previous_session_on_begin_tracking_label">
+   <widget class="QCheckBox" name="clear_previous_session_on_begin_tracking_checkbox">
     <property name="geometry">
      <rect>
       <x>10</x>

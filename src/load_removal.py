@@ -81,6 +81,12 @@ def perform_load_removal_logic(_zdcurtain_ref: "ZDCurtain"):
     if not _zdcurtain_ref.is_load_being_removed and _zdcurtain_ref.active_load_type != "none":
         send_command(_zdcurtain_ref, "pause")
         _zdcurtain_ref.is_load_being_removed = True
+        _zdcurtain_ref.captured_window_title_before_load = _zdcurtain_ref.settings_dict[
+            "captured_window_title"
+        ]
+
+        if _zdcurtain_ref.active_load_type != "black":
+            _zdcurtain_ref.set_middle_of_load_dependencies_enabled(should_be_enabled=False)
 
     check_if_load_ending(_zdcurtain_ref)
 
@@ -123,6 +129,9 @@ def check_load_cooldown(_zdcurtain_ref: "ZDCurtain"):
 
 
 def check_if_load_ending(_zdcurtain_ref: "ZDCurtain"):
+    if _zdcurtain_ref.load_removal_session is None:
+        return
+
     if (
         _zdcurtain_ref.black_screen_over_detected_at_timestamp
         > _zdcurtain_ref.confirmed_load_detected_at_timestamp
@@ -160,13 +169,20 @@ def check_if_load_ending(_zdcurtain_ref: "ZDCurtain"):
 
             _zdcurtain_ref.previous_loads_list.insertItem(0, load_record.to_string())
 
-            _zdcurtain_ref.active_load_type = "none"
-            _zdcurtain_ref.load_confidence_delta = 0
-            _zdcurtain_ref.potential_load_detected_at_timestamp = 0
-            _zdcurtain_ref.confirmed_load_detected_at_timestamp = 0
-            _zdcurtain_ref.reset_icons()
+            end_tracking_load(_zdcurtain_ref)
 
-            _zdcurtain_ref.is_load_being_removed = False
+
+def end_tracking_load(_zdcurtain_ref: "ZDCurtain"):
+    if _zdcurtain_ref.active_load_type != "black":
+        _zdcurtain_ref.set_middle_of_load_dependencies_enabled(should_be_enabled=True)
+
+    _zdcurtain_ref.active_load_type = "none"
+    _zdcurtain_ref.load_confidence_delta = 0
+    _zdcurtain_ref.potential_load_detected_at_timestamp = 0
+    _zdcurtain_ref.confirmed_load_detected_at_timestamp = 0
+    _zdcurtain_ref.reset_icons()
+    _zdcurtain_ref.is_load_being_removed = False
+    _zdcurtain_ref.captured_window_title_before_load = ""
 
 
 def perform_black_level_analysis(_zdcurtain_ref: "ZDCurtain"):

@@ -168,6 +168,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         self.start_tracking_automatically_checkbox.setChecked(
             self._zdcurtain_ref.settings_dict["start_tracking_automatically"]
         )
+        self.clear_previous_session_on_begin_tracking_checkbox.setChecked(
+            self._zdcurtain_ref.settings_dict["clear_previous_session_on_begin_tracking"]
+        )
         # endregion
 
         # region Binding
@@ -231,10 +234,10 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 self.start_tracking_automatically_checkbox.isChecked(),
             )
         )
-        self.clear_previous_session_on_begin_tracking_label.stateChanged.connect(
+        self.clear_previous_session_on_begin_tracking_checkbox.stateChanged.connect(
             lambda: self.__set_value(
-                "reset_all_variables_on_begin_tracking",
-                self.clear_previous_session_on_begin_tracking_label.isChecked(),
+                "clear_previous_session_on_begin_tracking",
+                self.clear_previous_session_on_begin_tracking_checkbox.isChecked(),
             )
         )
         self.live_capture_region_checkbox.stateChanged.connect(
@@ -265,12 +268,13 @@ def get_default_settings_from_ui():
         "capture_method": CAPTURE_METHODS.get_method_by_index(
             default_settings_dialog.capture_method_combobox.currentIndex()
         ),
+        "capture_stream_timeout_ms": DEFAULT_PROFILE["capture_stream_timeout_ms"],
         "capture_device_id": default_settings_dialog.capture_device_combobox.currentIndex(),
         "capture_device_name": "",
         "captured_window_title": "",
         "pause_hotkey": default_settings_dialog.pause_input.text(),
         "start_tracking_automatically": default_settings_dialog.start_tracking_automatically_checkbox.isChecked(),  # noqa: E501
-        "clear_previous_session_on_begin_tracking": default_settings_dialog.clear_previous_session_on_begin_tracking_label.isChecked(),  # noqa: E501
+        "clear_previous_session_on_begin_tracking": default_settings_dialog.clear_previous_session_on_begin_tracking_checkbox.isChecked(),  # noqa: E501
         "hide_analysis_elements": DEFAULT_PROFILE["hide_analysis_elements"],
         "black_threshold": default_settings_dialog.black_screen_threshold_spinbox.value(),
         "black_entropy_threshold": default_settings_dialog.black_screen_entropy_threshold_spinbox.value(),
@@ -430,7 +434,7 @@ def build_documentation(self):
         + "the previous load removal session when starting a new one."
     )
 
-    self.clear_previous_session_on_begin_tracking_label.setToolTip(
+    self.clear_previous_session_on_begin_tracking_checkbox.setToolTip(
         clear_previous_session_on_begin_tracking_tooltip
     )
     # endregion

@@ -1527,7 +1527,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="reset_tltr_button">
+      <widget class="QPushButton" name="clear_load_removal_session_button">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -1550,8 +1550,8 @@
         <enum>Qt::FocusPolicy::NoFocus</enum>
        </property>
        <property name="text">
-        <string>Reset Total Load 
-Time Removed</string>
+        <string>Clear Load
+Removal Session</string>
        </property>
       </widget>
      </item>

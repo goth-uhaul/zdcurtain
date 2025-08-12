@@ -17,7 +17,7 @@ from cv2.typing import MatLike
 from dateutil.tz import tzlocal
 from gen.build_vars import ZDCURTAIN_BUILD_NUMBER, ZDCURTAIN_GITHUB_REPOSITORY
 from PySide6 import QtGui
-from PySide6.QtWidgets import QLabel, QWidget
+from PySide6.QtWidgets import QLabel, QMessageBox, QWidget
 
 if sys.platform == "win32":
     import ctypes
@@ -57,9 +57,13 @@ class ColorChannel(IntEnum):
 
 
 class LocalTime:
-    def __init__(self):
+    def __init__(self, timestamp=None):
         timezone_local = tzlocal()
-        datetime_local = datetime.now(timezone_local)
+        datetime_local = (
+            datetime.fromtimestamp(timestamp, tz=timezone_local)
+            if timestamp
+            else datetime.now(timezone_local)
+        )
 
         self.timestamp = datetime_local.timestamp()
         self.date = datetime_local.isoformat()
@@ -275,6 +279,32 @@ def create_icon(qlabel: QLabel, image: MatLike | None):
 
         qimage = QtGui.QImage(image.data, width, height, width * channels, image_format)
         qlabel.setPixmap(QtGui.QPixmap(qimage))
+
+
+def create_yes_no_dialog(
+    title: str,
+    text: str,
+    yes_method: Callable | None,
+    no_method: Callable | None,
+    *,
+    default_to_no: bool = True,
+):
+    dialog = QMessageBox()
+    dialog.setWindowTitle(title)
+    dialog.setText(text)
+    dialog.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
+    if default_to_no:
+        dialog.setDefaultButton(QMessageBox.StandardButton.No)
+    else:
+        dialog.setDefaultButton(QMessageBox.StandardButton.Yes)
+
+    decision = dialog.exec()
+
+    if decision == QMessageBox.StandardButton.Yes and yes_method is not None:
+        yes_method()
+    elif decision == QMessageBox.StandardButton.No and no_method is not None:
+        no_method()
 
 
 def check_if_image_has_transparency(image: MatLike):

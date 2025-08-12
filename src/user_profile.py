@@ -21,6 +21,7 @@ class UserProfileDict(TypedDict):
     fps_limit: int
     live_capture_region: bool
     capture_method: str | CaptureMethodEnum
+    capture_stream_timeout_ms: int
     capture_device_id: int
     capture_device_name: str
     captured_window_title: str
@@ -65,6 +66,7 @@ DEFAULT_PROFILE = UserProfileDict(
     fps_limit=30,
     live_capture_region=True,
     capture_method=CAPTURE_METHODS.get_method_by_index(0),
+    capture_stream_timeout_ms=10000,
     capture_device_id=0,
     capture_device_name="",
     captured_window_title="",

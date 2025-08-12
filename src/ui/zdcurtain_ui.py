@@ -33,14 +33,19 @@ from PySide6.QtGui import QActionGroup
 from PySide6.QtWidgets import QLabel, QMainWindow
 
 import error_messages
-from about import open_about
 from capture_method import CaptureMethodBase, CaptureMethodEnum
 from frame_analysis import get_black_screen_detection_area, normalize_brightness_histogram
 from hotkeys import HOTKEYS, after_setting_hotkey
-from load_removal import perform_black_level_analysis, perform_load_removal_logic, perform_similarity_analysis
+from load_removal import (
+    end_tracking_load,
+    perform_black_level_analysis,
+    perform_load_removal_logic,
+    perform_similarity_analysis,
+)
 from load_tracking import LoadRemovalSession, export_tracked_loads
 from region_selection import select_window
 from stylesheets import style_progress_bar_fail, style_progress_bar_pass
+from ui.about_ui import open_about
 from ui.settings_ui import get_default_settings_from_ui, open_settings
 from user_profile import (
     DEFAULT_PROFILE,
@@ -55,7 +60,9 @@ from utils import (
     ONE_SECOND,
     ZDCURTAIN_VERSION,
     ImageShape,
+    LocalTime,
     create_icon,
+    create_yes_no_dialog,
     get_widget_position,
     imread,
     imwrite,
@@ -71,6 +78,7 @@ from ZDImage import ZDImage, resize_image
 class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     # Signals
     pause_signal = QtCore.Signal()
+    capture_state_changed_signal = QtCore.Signal()
     after_setting_hotkey_signal = QtCore.Signal()
     # Use this signal when trying to show an error from outside the main thread
     show_error_signal = QtCore.Signal(FunctionType)
@@ -80,6 +88,8 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     timer_main.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
     timer_frame_analysis = QtCore.QTimer()
     timer_frame_analysis.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
+    timer_capture_stream_timed_out = QtCore.QTimer()
+    timer_capture_stream_timed_out.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
 
     SettingsWidget: settings_ui.Ui_SettingsWidget | None = None
     AboutWidget: about_ui.Ui_AboutZDCurtainWidget | None = None
@@ -97,10 +107,11 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             return error_message_box()
 
         self.show_error_signal.connect(_show_error_signal_slot)
-        sys.excepthook = error_messages.make_excepthook(self)
 
         self.setupUi(self)
         self.setWindowTitle(f"ZDCurtain v.{ZDCURTAIN_VERSION}")
+
+        sys.excepthook = error_messages.make_excepthook(self)
 
         # Hotkeys need to be initialized to be passed as thread arguments in hotkeys.py
         for hotkey in HOTKEYS:
@@ -131,7 +142,8 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.is_load_being_removed = False
         self.single_load_time_removed_ms = 0.0
         self.load_time_removed_ms = 0.0
-        self.load_removal_session = LoadRemovalSession()
+        self.load_removal_session = None
+        self.captured_window_title_before_load = ""
 
         # Confidence algorithm
         self.black_screen_detected_at_timestamp = 0
@@ -179,6 +191,8 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.capture_view_resized = None
         self.capture_view_resized_normalized = None
         self.capture_view_resized_cropped = None
+        self.ever_had_capture = False
+        self.attempt_to_recover_capture_if_lost = False
 
         # icons
         self.elevator_icon = None
@@ -242,17 +256,21 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         # connecting button clicks to functions
         self.select_window_button.clicked.connect(lambda: select_window_and_start_tracking(self))
         self.select_device_button.clicked.connect(lambda: open_settings(self))
-        self.reset_statistics_button.clicked.connect(self.reset_statistics)
-        self.reset_tltr_button.clicked.connect(self.reset_lrt)
+        self.reset_statistics_button.clicked.connect(self.on_reset_statistics_button_press)
+        self.clear_load_removal_session_button.clicked.connect(
+            self.on_clear_load_removal_session_button_press
+        )
         self.begin_end_tracking_button.clicked.connect(self.on_tracking_button_press)
 
         # connect signals to functions
         self.after_setting_hotkey_signal.connect(lambda: after_setting_hotkey(self))
+        self.capture_state_changed_signal.connect(lambda: on_capture_state_changed(self))
 
         self.timer_main.timeout.connect(self.__run_app_logic)
         self.timer_frame_analysis.timeout.connect(
             lambda: self.__update_live_image_details(None, called_from_timer=True)
         )
+        self.timer_capture_stream_timed_out.timeout.connect(self.__give_up_capture_recovery)
 
         # image bindings
         self.__bind_icons()
@@ -281,11 +299,21 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             recovered = self.capture_method.recover_window(self.settings_dict["captured_window_title"])
             if recovered:
                 self.capture_view_raw = self.capture_method.get_frame()
+                self.timer_capture_stream_timed_out.stop()
+                self.capture_state_changed_signal.emit()
 
         return self.capture_view_raw
 
+    def __give_up_capture_recovery(self):
+        self.attempt_to_recover_capture_if_lost = False
+        self.ever_had_capture = False
+        self.timer_capture_stream_timed_out.stop()
+        self.live_image.setText("Couldn't find capture stream to recover!")
+        self.settings_dict["captured_window_title"] = ""
+        self.show_error_signal.emit(error_messages.couldnt_find_capture_to_recover)
+
     def __run_app_logic(self):
-        update_labels(self)
+        update_ui(self)
 
     def __update_live_image_details(
         self,
@@ -300,6 +328,9 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             self.capture_view_raw = self.capture_method.get_frame()
 
             if is_valid_image(self.capture_view_raw):
+                if not self.ever_had_capture:
+                    self.ever_had_capture = True
+
                 dim = (640, 360)
                 self.capture_view_resized = resize_image(self.capture_view_raw, dim, 1, cv2.INTER_AREA)
                 self.capture_view_resized_normalized = normalize_brightness_histogram(
@@ -332,8 +363,17 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                             self.screenshot_counter += 1
 
                         self.screenshot_timer += 1
-            else:
-                return  # self.__try_to_recover_capture()
+            elif (
+                self.settings_dict["captured_window_title"]
+                and self.ever_had_capture
+                and self.attempt_to_recover_capture_if_lost
+            ):
+                if not self.timer_capture_stream_timed_out.isActive():
+                    self.timer_capture_stream_timed_out.start(self.settings_dict["capture_stream_timeout_ms"])
+                    # if it happens during a currently tracked load, stop tracking the load IMMEDIATELY
+                    throw_out_in_progress_load(self)
+
+                self.__try_to_recover_capture()
 
         frame_end_time = perf_counter_ns()
 
@@ -353,16 +393,20 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
         self.total_load_time_removed_label.setText(f"{tltr_m:.0f}m {tltr_s:.0f}s {tltr_ms:.0f}ms")
 
-    """         self.analysis_status_label.setText(
-            f"pot: {self.potential_load_detected_at_timestamp}; con: "
-            + f" {self.confirmed_load_detected_at_timestamp}; lt: {self.active_load_type}"
-        ) """
-
     def on_tracking_button_press(self):
         if self.is_tracking:
             self.end_tracking()
         else:
             self.begin_tracking()
+
+    def on_clear_load_removal_session_button_press(self):
+        create_yes_no_dialog(
+            "Reset Load Data",
+            "This will clear all load removal data for this tracking session, "
+            + "including the total load time removed. Are you sure you want to do this?",
+            self.reset_all_variables,
+            None,
+        )
 
     def pause_timer(self):
         # TODO: add what to do when you hit pause hotkey, if this even needs to be done
@@ -372,13 +416,10 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.__bind_icons()
 
     def reset_all_variables(self):
-        self.reset_tracking_variables()
-        self.reset_lrt()
+        self.__reset_tracking_variables()
+        self.__reset_load_data()
 
-    def reset_lrt(self):
-        self.load_time_removed_ms = 0
-
-    def reset_tracking_variables(self):
+    def __reset_tracking_variables(self):
         self.active_load_type = "none"
         self.black_screen_detected_at_timestamp = 0
         self.black_screen_over_detected_at_timestamp = 0
@@ -394,9 +435,9 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.load_cooldown_timestamp = 0
         self.load_cooldown_is_active = False
         self.load_cooldown_type = "none"
-        self.reset_similarity_variables()
+        self.__reset_similarity_variables()
 
-    def reset_similarity_variables(self):
+    def __reset_similarity_variables(self):
         self.similarity_to_tram = 0.0
         self.similarity_to_tram_max = 0.0
         self.similarity_to_teleportal = 0.0
@@ -408,33 +449,69 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.similarity_to_end_screen = 0.0
         self.similarity_to_end_screen_max = 0.0
 
-    def reset_statistics(self):
-        self.reset_similarity_variables()
+    def on_reset_statistics_button_press(self):
+        self.__reset_similarity_variables()
 
     def begin_tracking(self):
         if self.is_tracking:  # we're already tracking, no need to run this
             return
 
-        if self.settings_dict["clear_previous_session_on_begin_tracking"]:
-            self.reset_all_variables()
-            self.load_removal_session = LoadRemovalSession()
-            self.previous_loads_list.clear()
+        if (
+            self.settings_dict["clear_previous_session_on_begin_tracking"]
+            and self.load_removal_session is not None
+            and self.load_removal_session.get_load_count() > 0
+        ):
+            create_yes_no_dialog(
+                "Reset Load Data",
+                "Starting a new tracking session will remove all load removal data for the "
+                + "current session, including the total load time removed. "
+                + "Are you sure you want to do this? (You can change this behavior in the "
+                + "settings.)",
+                self.__reset_load_data_and_begin_tracking,
+                None,
+            )
+        else:
+            if self.load_removal_session is None:
+                self.load_removal_session = LoadRemovalSession()
 
+            self.__begin_tracking()
+
+    def __reset_load_data(self):
+        self.load_removal_session = LoadRemovalSession()
+        self.previous_loads_list.clear()
+
+    def __reset_load_data_and_begin_tracking(self):
+        self.__reset_load_data()
+        self.__begin_tracking()
+
+    def __begin_tracking(self):
         self.is_tracking = True
         self.begin_end_tracking_button.setText("End Tracking")
         if not self.action_hide_analysis_elements:
             self.analysis_status_label.show()
 
-    def end_tracking(self):
+    def end_tracking(self, *, ending_due_to_error=False):
         if not self.is_tracking:  # we're not tracking, no need to run this
             return
 
-        self.reset_tracking_variables()
+        self.__reset_tracking_variables()
         self.is_tracking = False
         self.begin_end_tracking_button.setText("Begin Tracking")
 
         if not self.action_hide_analysis_elements:
             self.analysis_status_label.hide()
+
+        if (
+            self.load_removal_session is not None
+            and self.load_removal_session.get_load_count() > 0
+            and not ending_due_to_error
+        ):
+            create_yes_no_dialog(
+                "Export Load Removal Session",
+                "Would you like to export the results of your load removal session to a file?",
+                lambda: export_tracked_loads(self.load_removal_session),
+                None,
+            )
 
     def set_analysis_elements_hidden(self, should_hide):
         self.settings_dict["hide_analysis_elements"] = not should_hide
@@ -473,29 +550,87 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
         return capture_view_to_use
 
+    def set_middle_of_load_dependencies_enabled(self, *, should_be_enabled: bool):
+        self.begin_end_tracking_button.setEnabled(should_be_enabled)
+        self.clear_load_removal_session_button.setEnabled(should_be_enabled)
+        self.action_export_tracked_loads.setEnabled(should_be_enabled)
+
+    def set_active_capture_dependencies_enabled(self, *, should_be_enabled: bool):
+        self.reset_statistics_button.setEnabled(should_be_enabled)
+        self.begin_end_tracking_button.setEnabled(should_be_enabled)
+        self.clear_load_removal_session_button.setEnabled(should_be_enabled)
+
     @override
     def closeEvent(self, event: QtGui.QCloseEvent | None = None):
         """Exit safely when closing the window."""
 
-        def exit_program() -> NoReturn:
-            self.capture_method.close()
+        def exit_program(_zdcurtain_ref, event) -> NoReturn:
+            _zdcurtain_ref.capture_method.close()
             if event is not None:
                 event.accept()
             sys.exit()
 
-        exit_program()
+        exit_program(self, event)
 
         # Fallthrough case: Prevent program from closing.
         event.ignore()
 
 
-def update_labels(_zdcurtain_ref: "ZDCurtain"):
+def throw_out_in_progress_load(_zdcurtain_ref: "ZDCurtain"):
+    if _zdcurtain_ref.load_removal_session is None:
+        return
+
+    if _zdcurtain_ref.is_load_being_removed:
+        load_lost_at = LocalTime()
+
+        lost_load_record = _zdcurtain_ref.load_removal_session.create_lost_load_record(
+            _zdcurtain_ref.active_load_type, load_lost_at
+        )
+
+        _zdcurtain_ref.previous_loads_list.insertItem(0, lost_load_record.to_string())
+
+        _zdcurtain_ref.show_error_signal.emit(
+            lambda: error_messages.capture_stream_lost_during_load(load_lost_at)
+        )
+
+        end_tracking_load(_zdcurtain_ref)
+
+
+def on_capture_state_changed(_zdcurtain_ref: "ZDCurtain"):
+    if (
+        _zdcurtain_ref.settings_dict["captured_window_title"]
+        != _zdcurtain_ref.captured_window_title_before_load
+        and _zdcurtain_ref.is_load_being_removed
+    ):
+        # it looks like the capture state changed in the middle of a load, we should give a warning
+        throw_out_in_progress_load(_zdcurtain_ref)
+
+    _zdcurtain_ref.timer_capture_stream_timed_out.stop()
+
+    _zdcurtain_ref.attempt_to_recover_capture_if_lost = True
+    _zdcurtain_ref.set_active_capture_dependencies_enabled(should_be_enabled=True)
+
+
+def update_ui(_zdcurtain_ref: "ZDCurtain"):
     # Update title from target window or Capture Device name
     capture_region_window_label = (
         _zdcurtain_ref.settings_dict["capture_device_name"]
         if _zdcurtain_ref.settings_dict["capture_method"] == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE
         else _zdcurtain_ref.settings_dict["captured_window_title"]
     )
+
+    if (
+        is_valid_image(_zdcurtain_ref.capture_view_raw)
+        and not _zdcurtain_ref.reset_statistics_button.isEnabled()
+    ):
+        _zdcurtain_ref.set_active_capture_dependencies_enabled(should_be_enabled=True)
+
+    if (
+        not is_valid_image(_zdcurtain_ref.capture_view_raw)
+        and _zdcurtain_ref.reset_statistics_button.isEnabled()
+    ):
+        _zdcurtain_ref.set_active_capture_dependencies_enabled(should_be_enabled=False)
+
     _zdcurtain_ref.capture_region_window_label.setText(capture_region_window_label)
 
     black_level_text = f"{_zdcurtain_ref.black_level:.0f}" if _zdcurtain_ref.is_tracking else "--"
@@ -596,12 +731,12 @@ def update_labels(_zdcurtain_ref: "ZDCurtain"):
 
 
 def load_images(_zdcurtain_ref):
-    _zdcurtain_ref.elevator_icon = read_image("res/elevator_icon.png")
-    _zdcurtain_ref.tram_icon = read_image("res/tram_icon.png")
-    _zdcurtain_ref.teleportal_icon = read_image("res/teleportal_icon.png")
-    _zdcurtain_ref.capsule_icon = read_image("res/capsule_icon.png")
-    _zdcurtain_ref.gunship_icon = read_image("res/gunship_icon_small.png")
-    _zdcurtain_ref.loading_icon = read_image("res/loading_icon.png")
+    _zdcurtain_ref.elevator_icon = read_image("res/icons/elevator_icon.png")
+    _zdcurtain_ref.tram_icon = read_image("res/icons/tram_icon.png")
+    _zdcurtain_ref.teleportal_icon = read_image("res/icons/teleportal_icon.png")
+    _zdcurtain_ref.capsule_icon = read_image("res/icons/capsule_icon.png")
+    _zdcurtain_ref.gunship_icon = read_image("res/icons/gunship_icon_small.png")
+    _zdcurtain_ref.loading_icon = read_image("res/icons/loading_icon.png")
 
     load_comparison_images(_zdcurtain_ref)
 
