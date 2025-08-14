@@ -1,3 +1,4 @@
+import datetime
 import json
 
 import pandas as pd
@@ -10,7 +11,7 @@ from utils import LocalTime, get_version
 class LoadRemovalSession:
     def __init__(self):
         now = LocalTime()
-        self.loads = []
+        self.__loads = []
         self.sessionInfo = LoadRemovalSessionInfo(now, get_version(), self)
 
     def export_loads(self, data_format, filename):
@@ -27,15 +28,47 @@ class LoadRemovalSession:
 
     def create_load_removal_record(self, load_type, load_time_removed):
         now = LocalTime()
-        self.loads.append(LoadRemovalRecordEntry(load_type, load_time_removed, now))
-        return self.loads[len(self.loads) - 1]
+        self.__loads.append(LoadRemovalRecordEntry(load_type, load_time_removed, now))
+        return self.__loads[-1]
 
     def create_lost_load_record(self, load_type, load_lost_at):
-        self.loads.append(LostLoadEntry(load_type, load_lost_at))
-        return self.loads[len(self.loads) - 1]
+        self.__loads.append(LostLoadEntry(load_type, load_lost_at))
+        return self.__loads[-1]
+
+    def get_loads(self):
+        return self.__loads
 
     def get_load_count(self):
-        return len(self.loads)
+        return len(self.__loads)
+
+    def get_latest_load(self):
+        if self.get_load_count() > 0:
+            return self.__loads[-1]
+        return None
+
+    def get_recent_loads(self, seconds_to_look_back, *, removals_only=False):
+        loads = None
+
+        if removals_only:
+            loads = [x for x in self.__loads if isinstance(x, LoadRemovalRecordEntry)]
+        else:
+            loads = self.__loads
+
+        now = LocalTime().get_datetime()
+        time_delta = datetime.timedelta(seconds=seconds_to_look_back * -1)
+        adjusted_datetime = now + time_delta
+
+        return [x for x in loads if x.loadRemovedAt.get_datetime() >= adjusted_datetime]
+
+    def delete_load(self, datetime):
+        if self.get_load_count() > 0:
+            load_to_delete_index = next(
+                (i for i, load in enumerate(self.__loads) if load.loadRemovedAt.get_datetime() == datetime),
+                None,
+            )
+
+            if load_to_delete_index is not None:
+                del self.__loads[load_to_delete_index]
 
     def __write_to_excel(self, filepath, sheet_name):
         df = pd.json_normalize(self.to_dict(), ["loads"])
@@ -48,7 +81,7 @@ class LoadRemovalSession:
     def to_dict(self):
         return {
             "sessionInfo": self.sessionInfo.to_dict(),
-            "loads": [load.to_dict() for load in self.loads],
+            "loads": [load.to_dict() for load in self.__loads],
         }
 
 

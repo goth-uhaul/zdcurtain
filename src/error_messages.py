@@ -59,6 +59,10 @@ def already_open():
     )
 
 
+def capture_stream_lost():
+    set_text_message("Capture stream was lost.")
+
+
 def capture_stream_lost_during_load(_load_lost_at: LocalTime):
     set_text_message(
         "Could not track in progress load due to capture stream being lost.\n\n"
@@ -66,12 +70,16 @@ def capture_stream_lost_during_load(_load_lost_at: LocalTime):
     )
 
 
-def capture_stream_lost():
-    set_text_message("Capture stream was lost.")
-
-
 def couldnt_find_capture_to_recover():
     set_text_message("Couldn't find a capture stream to recover. Please re-select your window or device.")
+
+
+def invalid_hotkey(hotkey_name: str):
+    set_text_message(f"Invalid hotkey {hotkey_name!r}")
+
+
+def invalid_screenshot():
+    set_text_message("There's no active stream to capture a screenshot from.")
 
 
 def invalid_settings():
@@ -85,13 +93,6 @@ def no_settings_file_on_open():
     )
 
 
-def too_many_settings_files_on_open():
-    set_text_message(
-        "Too many settings files found. "
-        + "Only one can be loaded on open if placed in the same folder as the ZDCurtain executable."
-    )
-
-
 def region():
     set_text_message(
         "No region is selected or the Capture Region window is not open. "
@@ -99,8 +100,15 @@ def region():
     )
 
 
-def invalid_hotkey(hotkey_name: str):
-    set_text_message(f"Invalid hotkey {hotkey_name!r}")
+def screenshot_directory_not_set():
+    set_text_message("You must set a screenshot directory in order to take screenshots.")
+
+
+def too_many_settings_files_on_open():
+    set_text_message(
+        "Too many settings files found. "
+        + "Only one can be loaded on open if placed in the same folder as the ZDCurtain executable."
+    )
 
 
 def exception_traceback(exception: BaseException, message: str = ""):

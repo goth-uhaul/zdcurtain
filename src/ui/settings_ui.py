@@ -121,13 +121,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         else:
             self.capture_device_combobox.setPlaceholderText("No device found.")
 
-    def set_screenshot_location(self):
-        selected_directory = QFileDialog.getExistingDirectory()
-
-        if selected_directory:
-            self._zdcurtain_ref.settings_dict["screenshot_directory"] = selected_directory
-        else:
-            self._zdcurtain_ref.settings_dict["screenshot_directory"] = ""
+    def __on_screenshot_location_folder_button_pressed(self, _zdcurtain_ref: "ZDCurtain"):
+        set_screenshot_location(self._zdcurtain_ref)
+        self.locations_screenshot_folder_input.setText(_zdcurtain_ref.settings_dict["screenshot_directory"])
 
     def __setup_bindings(self):
         # Hotkey initial values and bindings
@@ -248,9 +244,20 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         )
 
         # screenshots
-        self.locations_screenshot_folder_button.clicked.connect(self.set_screenshot_location)
+        self.locations_screenshot_folder_button.clicked.connect(
+            lambda: self.__on_screenshot_location_folder_button_pressed(self._zdcurtain_ref)
+        )
 
         # endregion
+
+
+def set_screenshot_location(_zdcurtain_ref: "ZDCurtain"):
+    selected_directory = QFileDialog.getExistingDirectory()
+
+    if selected_directory:
+        _zdcurtain_ref.settings_dict["screenshot_directory"] = selected_directory
+    else:
+        _zdcurtain_ref.settings_dict["screenshot_directory"] = ""
 
 
 def open_settings(zdcurtain: "ZDCurtain"):

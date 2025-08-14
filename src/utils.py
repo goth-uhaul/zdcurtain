@@ -16,6 +16,7 @@ import numpy as np
 from cv2.typing import MatLike
 from dateutil.tz import tzlocal
 from gen.build_vars import ZDCURTAIN_BUILD_NUMBER, ZDCURTAIN_GITHUB_REPOSITORY
+from pathvalidate import sanitize_filename
 from PySide6 import QtGui
 from PySide6.QtWidgets import QLabel, QMessageBox, QWidget
 
@@ -68,6 +69,9 @@ class LocalTime:
         self.timestamp = datetime_local.timestamp()
         self.date = datetime_local.isoformat()
         self.timeZone = timezone_local.tzname(datetime_local)
+
+    def get_datetime(self):
+        return datetime.fromisoformat(self.date)
 
     def to_dict(self):
         return {"date": self.date, "timestamp": self.timestamp, "timezone": self.timeZone}
@@ -262,6 +266,10 @@ def move_widget(widget: QWidget, x: int, y: int):
 
 def get_version():
     return ZDCURTAIN_VERSION
+
+
+def get_sanitized_filename(unsanitary_filename: str):
+    return sanitize_filename(unsanitary_filename)
 
 
 def create_icon(qlabel: QLabel, image: MatLike | None):

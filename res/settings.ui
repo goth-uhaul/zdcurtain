@@ -627,9 +627,9 @@
    <property name="title">
     <string>Locations</string>
    </property>
-   <widget class="QLabel" name="locations_screenshot_folder_labell">
+   <widget class="QLabel" name="locations_screenshot_folder_label">
     <property name="enabled">
-     <bool>false</bool>
+     <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
@@ -645,7 +645,7 @@
    </widget>
    <widget class="QLineEdit" name="locations_screenshot_folder_input">
     <property name="enabled">
-     <bool>false</bool>
+     <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
@@ -661,7 +661,7 @@
    </widget>
    <widget class="QPushButton" name="locations_screenshot_folder_button">
     <property name="enabled">
-     <bool>false</bool>
+     <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>

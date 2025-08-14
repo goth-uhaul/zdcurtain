@@ -9,3 +9,6 @@ style_progress_bar_pass = (
     + "background-color: #343047;color: black; }"
     + "QProgressBar::chunk { background-color: #00ffff;}"
 )
+
+style_threshold_line_pass = "background-color: #004040;"  # noqa: S105 not a password, genius
+style_threshold_line_fail = "background-color: #00ffff;"

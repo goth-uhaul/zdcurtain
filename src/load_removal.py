@@ -2,9 +2,10 @@
 from time import perf_counter_ns
 from typing import TYPE_CHECKING
 
+import error_messages
 from frame_analysis import calculate_frame_luminance, get_comparison_method_by_name
 from hotkeys import send_command
-from utils import DREAD_MAX_DELTA_MS, create_icon, is_valid_image, ms_to_ns, ns_to_ms
+from utils import DREAD_MAX_DELTA_MS, LocalTime, create_icon, is_valid_image, ms_to_ns, ns_to_ms
 
 if TYPE_CHECKING:
     from ui.zdcurtain_ui import ZDCurtain
@@ -15,10 +16,33 @@ def perform_load_removal_logic(_zdcurtain_ref: "ZDCurtain"):
         # stop tracking
         _zdcurtain_ref.end_tracking()
 
-    if not _zdcurtain_ref.is_tracking:
+    if not _zdcurtain_ref.is_tracking or _zdcurtain_ref.load_removal_session is None:
         return
 
     check_load_cooldown(_zdcurtain_ref)
+
+    if (
+        _zdcurtain_ref.similarity_to_game_over_screen > 95
+        and not _zdcurtain_ref.in_game_over_screen
+        and _zdcurtain_ref.blacklevel_entropy >= _zdcurtain_ref.settings_dict["black_entropy_threshold"]
+    ):
+        _zdcurtain_ref.in_game_over_screen = True
+
+        # retrieve and delete all loads that took place in the last 6 seconds
+        recent_loads = _zdcurtain_ref.load_removal_session.get_recent_loads(
+            seconds_to_look_back=6, removals_only=True
+        )
+
+        if len(recent_loads) > 0:
+            for load in recent_loads:
+                _zdcurtain_ref.load_removal_session.delete_load(load.loadRemovedAt.get_datetime())
+            _zdcurtain_ref.refresh_previous_loads_list()
+
+    elif (
+        _zdcurtain_ref.similarity_to_game_over_screen <= 95
+        and _zdcurtain_ref.in_game_over_screen < _zdcurtain_ref.settings_dict["black_entropy_threshold"]
+    ):
+        _zdcurtain_ref.in_game_over_screen = False
 
     if (
         _zdcurtain_ref.black_level < _zdcurtain_ref.settings_dict["black_threshold"]
@@ -44,8 +68,13 @@ def perform_load_removal_logic(_zdcurtain_ref: "ZDCurtain"):
     ):
         _zdcurtain_ref.confirmed_load_detected_at_timestamp = perf_counter_ns()
         _zdcurtain_ref.active_load_type = "black"
+        create_icon(_zdcurtain_ref.black_screen_load_icon, _zdcurtain_ref.loading_icon)
 
-    if _zdcurtain_ref.active_load_type in {"none", "black"} and not _zdcurtain_ref.load_cooldown_is_active:
+    if (
+        _zdcurtain_ref.active_load_type in {"none", "black"}
+        and not _zdcurtain_ref.load_cooldown_is_active
+        and not _zdcurtain_ref.in_game_over_screen
+    ):
         if check_load_confidence(
             _zdcurtain_ref,
             _zdcurtain_ref.similarity_to_elevator,
@@ -163,11 +192,11 @@ def check_if_load_ending(_zdcurtain_ref: "ZDCurtain"):
 
             _zdcurtain_ref.load_time_removed_ms += _zdcurtain_ref.single_load_time_removed_ms
 
-            load_record = _zdcurtain_ref.load_removal_session.create_load_removal_record(
+            _ = _zdcurtain_ref.load_removal_session.create_load_removal_record(
                 _zdcurtain_ref.active_load_type, _zdcurtain_ref.single_load_time_removed_ms
             )
 
-            _zdcurtain_ref.previous_loads_list.insertItem(0, load_record.to_string())
+            _zdcurtain_ref.refresh_previous_loads_list()
 
             end_tracking_load(_zdcurtain_ref)
 
@@ -339,3 +368,43 @@ def perform_similarity_analysis(_zdcurtain_ref: "ZDCurtain"):
     _zdcurtain_ref.similarity_to_end_screen_max = max(
         _zdcurtain_ref.similarity_to_end_screen_max, _zdcurtain_ref.similarity_to_end_screen
     )
+
+    comparison_method_to_use = get_comparison_method_by_name("histogram")
+
+    capture_type_to_use = _zdcurtain_ref.get_capture_view_by_name("standard_resized")
+
+    _zdcurtain_ref.similarity_to_game_over_screen = (
+        max(
+            comparison_method_to_use(
+                capture_type_to_use,
+                _zdcurtain_ref.comparison_game_over_screen.image_data,
+                _zdcurtain_ref.comparison_game_over_screen.mask_data,
+            ),
+            comparison_method_to_use(
+                capture_type_to_use,
+                _zdcurtain_ref.comparison_game_over_screen_dimmed.image_data,
+                _zdcurtain_ref.comparison_game_over_screen_dimmed.mask_data,
+            ),
+        )
+        * 100
+    )
+
+
+def throw_out_in_progress_load(_zdcurtain_ref: "ZDCurtain"):
+    if _zdcurtain_ref.load_removal_session is None:
+        return
+
+    if _zdcurtain_ref.is_load_being_removed:
+        load_lost_at = LocalTime()
+
+        lost_load_record = _zdcurtain_ref.load_removal_session.create_lost_load_record(
+            _zdcurtain_ref.active_load_type, load_lost_at
+        )
+
+        _zdcurtain_ref.previous_loads_list.insertItem(0, lost_load_record.to_string())
+
+        _zdcurtain_ref.show_error_signal.emit(
+            lambda: error_messages.capture_stream_lost_during_load(load_lost_at)
+        )
+
+        end_tracking_load(_zdcurtain_ref)

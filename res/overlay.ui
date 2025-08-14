@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <author>Toufool</author>
- <class>AboutZDCurtainWidget</class>
- <widget class="QWidget" name="AboutZDCurtainWidget">
+ <class>OverlayWidget</class>
+ <widget class="QWidget" name="OverlayWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>250</width>
-    <height>250</height>
+    <width>773</width>
+    <height>333</height>
    </rect>
   </property>
   <property name="font">

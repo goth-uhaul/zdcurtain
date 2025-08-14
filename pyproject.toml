@@ -36,3 +36,6 @@ dev = [
     "winrt-windows-graphics-directx-direct3d11-interop>=3.2.1",
     "winrt-windows-graphics-imaging>=3.2.1",
 ]
+
+[tool.pyside6-project]
+files = ["res/zdcurtain.ui", "res/settings.ui", "res/about.ui"]

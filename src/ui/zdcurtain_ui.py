@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+from __future__ import annotations
+
 import sys
 from time import perf_counter_ns
 
@@ -19,6 +21,7 @@ if sys.platform == "win32":
     # pywinbox._pywinbox_win.py
     ctypes.windll.shcore.SetProcessDpiAwareness = do_nothing  # pyright: ignore[reportAttributeAccessIssue]
 
+
 from collections.abc import Callable
 from copy import deepcopy
 from math import floor
@@ -30,23 +33,29 @@ from cv2.typing import MatLike
 from gen import about as about_ui, settings as settings_ui, zdcurtain as zdcurtain_ui
 from PySide6 import QtCore, QtGui
 from PySide6.QtGui import QActionGroup
-from PySide6.QtWidgets import QLabel, QMainWindow
+from PySide6.QtWidgets import QMainWindow
 
 import error_messages
 from capture_method import CaptureMethodBase, CaptureMethodEnum
 from frame_analysis import get_black_screen_detection_area, normalize_brightness_histogram
 from hotkeys import HOTKEYS, after_setting_hotkey
+from image_utilities import load_comparison_images, load_images, set_preview_image, take_screenshot
 from load_removal import (
-    end_tracking_load,
     perform_black_level_analysis,
     perform_load_removal_logic,
     perform_similarity_analysis,
+    throw_out_in_progress_load,
 )
 from load_tracking import LoadRemovalSession, export_tracked_loads
 from region_selection import select_window
-from stylesheets import style_progress_bar_fail, style_progress_bar_pass
+from stylesheets import (
+    style_progress_bar_fail,
+    style_progress_bar_pass,
+    style_threshold_line_fail,
+    style_threshold_line_pass,
+)
 from ui.about_ui import open_about
-from ui.settings_ui import get_default_settings_from_ui, open_settings
+from ui.settings_ui import get_default_settings_from_ui, open_settings, set_screenshot_location
 from user_profile import (
     DEFAULT_PROFILE,
     load_settings,
@@ -55,22 +64,17 @@ from user_profile import (
     save_settings_as,
 )
 from utils import (
-    BGR_CHANNEL_COUNT,
-    BGRA_CHANNEL_COUNT,
     ONE_SECOND,
     ZDCURTAIN_VERSION,
-    ImageShape,
     LocalTime,
     create_icon,
     create_yes_no_dialog,
+    get_sanitized_filename,
     get_widget_position,
-    imread,
-    imwrite,
     is_valid_image,
     move_widget,
     ms_to_msms,
     ns_to_ms,
-    resource_path,
 )
 from ZDImage import ZDImage, resize_image
 
@@ -101,6 +105,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.__init_measurement_variables()
 
         load_images(self)
+        load_comparison_images(self)
 
         # Setup global error handling
         def _show_error_signal_slot(error_message_box: Callable[..., object]):
@@ -153,6 +158,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.load_confidence_delta = 0
 
         self.in_black_screen = False
+        self.in_game_over_screen = False
         self.last_black_screen_time = 0
         self.active_load_type = "none"
 
@@ -175,6 +181,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.similarity_to_egg_max = 0.0
         self.similarity_to_end_screen = 0.0
         self.similarity_to_end_screen_max = 0.0
+        self.similarity_to_game_over_screen = 0.0
 
         # performance
         self.last_frame_time = 1
@@ -201,6 +208,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.capsule_icon = None
         self.gunship_icon = None
         self.loading_icon = None
+        self.loading_icon_grayed = None
 
         # comparison images
         self.comparison_capsule_gravity: ZDImage
@@ -219,11 +227,11 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.comparison_train_right_power: ZDImage
         self.comparison_train_right_varia: ZDImage
         self.comparison_end_screen: ZDImage
+        self.comparison_game_over_screen: ZDImage
+        self.comparison_game_over_screen_dimmed: ZDImage
 
         # screenshots
-        self.screenshot_timer = 0
         self.screenshot_counter = 1
-        self.take_screenshots = False
 
     def __bind_icons(self):
         create_icon(self.elevator_tracking_icon, self.elevator_icon)
@@ -231,6 +239,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         create_icon(self.teleportal_tracking_icon, self.teleportal_icon)
         create_icon(self.egg_tracking_icon, self.capsule_icon)
         create_icon(self.end_screen_tracking_icon, self.gunship_icon)
+        create_icon(self.black_screen_load_icon, self.loading_icon_grayed)
 
     def __setup_bindings(self):
         # connecting menu actions
@@ -254,17 +263,18 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.action_exit.triggered.connect(lambda: self.closeEvent())  # noqa: PLW0108
 
         # connecting button clicks to functions
-        self.select_window_button.clicked.connect(lambda: select_window_and_start_tracking(self))
+        self.select_window_button.clicked.connect(self.__select_window_and_start_tracking)
         self.select_device_button.clicked.connect(lambda: open_settings(self))
         self.reset_statistics_button.clicked.connect(self.on_reset_statistics_button_press)
         self.clear_load_removal_session_button.clicked.connect(
             self.on_clear_load_removal_session_button_press
         )
         self.begin_end_tracking_button.clicked.connect(self.on_tracking_button_press)
+        self.take_screenshot_button.clicked.connect(self.__on_take_screenshot_button_pressed)
 
         # connect signals to functions
         self.after_setting_hotkey_signal.connect(lambda: after_setting_hotkey(self))
-        self.capture_state_changed_signal.connect(lambda: on_capture_state_changed(self))
+        self.capture_state_changed_signal.connect(self.on_capture_state_changed)
 
         self.timer_main.timeout.connect(self.__run_app_logic)
         self.timer_frame_analysis.timeout.connect(
@@ -284,6 +294,16 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         a = action_group.addAction(self.action_capture_standard)
         b = action_group.addAction(self.action_capture_normalized)
         self.menuCapture.addActions([a, b])
+
+    def __select_window_and_start_tracking(self):
+        select_window(self)
+
+        if (
+            self.settings_dict["start_tracking_automatically"]
+            and not self.is_tracking
+            and is_valid_image(self.capture_view_raw)
+        ):
+            self.begin_tracking()
 
     def __try_to_recover_capture(self):
         self.capture_view_raw = None
@@ -313,7 +333,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.show_error_signal.emit(error_messages.couldnt_find_capture_to_recover)
 
     def __run_app_logic(self):
-        update_ui(self)
+        self.__update_ui()
 
     def __update_live_image_details(
         self,
@@ -352,17 +372,6 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                     perform_black_level_analysis(self)
                     perform_similarity_analysis(self)
                     perform_load_removal_logic(self)
-
-                    if self.take_screenshots:
-                        if self.screenshot_timer >= 4:
-                            imwrite(
-                                f"sshot/sshot_{self.screenshot_counter}.png",
-                                self.capture_view_resized_normalized,
-                            )
-                            self.screenshot_timer = 0
-                            self.screenshot_counter += 1
-
-                        self.screenshot_timer += 1
             elif (
                 self.settings_dict["captured_window_title"]
                 and self.ever_had_capture
@@ -385,7 +394,8 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             )
 
         self.analysis_status_label.setText(
-            f"Frame Time: {frame_time:.2f}, Load Type: {self.active_load_type}, "
+            f"Frame Time: {frame_time:.2f}, Game Over: {self.in_game_over_screen}, "
+            + f"{self.similarity_to_game_over_screen:.2f}, "
             + f"Last Black Screen Duration {self.last_black_screen_time}ms "
         )
 
@@ -470,14 +480,21 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                 self.__reset_load_data_and_begin_tracking,
                 None,
             )
-        else:
-            if self.load_removal_session is None:
-                self.load_removal_session = LoadRemovalSession()
-
+        elif (
+            not self.settings_dict["clear_previous_session_on_begin_tracking"]
+            and self.load_removal_session is not None
+            and self.load_removal_session.get_load_count() > 0
+        ):
+            self.__begin_tracking()
+        elif self.load_removal_session is None:
+            self.load_removal_session = LoadRemovalSession()
             self.__begin_tracking()
 
     def __reset_load_data(self):
         self.load_removal_session = LoadRemovalSession()
+        self.single_load_time_removed_ms = 0
+        self.load_time_removed_ms = 0
+        self.screenshot_counter = 0
         self.previous_loads_list.clear()
 
     def __reset_load_data_and_begin_tracking(self):
@@ -513,6 +530,13 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                 None,
             )
 
+    def __update_ui(self):
+        self.__update_capture_region_label()
+        self.__update_buttons()
+        self.__update_statistics_values()
+        self.__update_statistics_display_colors()
+        self.__update_statistics_widget_locations()
+
     def set_analysis_elements_hidden(self, should_hide):
         self.settings_dict["hide_analysis_elements"] = not should_hide
         self.black_screen_detection_area_label.setHidden(should_hide)
@@ -528,6 +552,15 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             case "normalized_resized":
                 self.action_capture_normalized.setChecked(True)
                 self.screenshot_capture_view_label.setText("Normalized View")
+            case _:
+                raise KeyError(f"{capture_type!r} is not a valid capture type for screenshots")
+
+    def get_capture_type_for_screenshots(self, capture_type):
+        match capture_type:
+            case "standard_resized":
+                return self.capture_view_resized
+            case "normalized_resized":
+                return self.capture_view_resized_normalized
             case _:
                 raise KeyError(f"{capture_type!r} is not a valid capture type for screenshots")
 
@@ -560,6 +593,239 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.begin_end_tracking_button.setEnabled(should_be_enabled)
         self.clear_load_removal_session_button.setEnabled(should_be_enabled)
 
+    def on_capture_state_changed(self):
+        if (
+            self.settings_dict["captured_window_title"] != self.captured_window_title_before_load
+            and self.is_load_being_removed
+        ):
+            # it looks like the capture state changed in the middle of a load, we should give a warning
+            throw_out_in_progress_load(self)
+
+        self.timer_capture_stream_timed_out.stop()
+
+        self.attempt_to_recover_capture_if_lost = True
+        self.set_active_capture_dependencies_enabled(should_be_enabled=True)
+
+    def refresh_previous_loads_list(self):
+        if self.load_removal_session is not None:
+            loads = self.load_removal_session.get_loads()
+
+            if loads is not None:
+                reversed_loads = list(reversed(loads))
+                self.previous_loads_list.clear()
+
+                self.previous_loads_list.addItems([load.to_string() for load in reversed_loads])
+
+    def __update_buttons(self):
+        if is_valid_image(self.capture_view_raw) and not self.reset_statistics_button.isEnabled():
+            self.set_active_capture_dependencies_enabled(should_be_enabled=True)
+
+        if not is_valid_image(self.capture_view_raw) and self.reset_statistics_button.isEnabled():
+            self.set_active_capture_dependencies_enabled(should_be_enabled=False)
+
+    def __update_capture_region_label(self):
+        # Update title from target window or Capture Device name
+        capture_region_window_label = (
+            self.settings_dict["capture_device_name"]
+            if self.settings_dict["capture_method"] == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE
+            else self.settings_dict["captured_window_title"]
+        )
+
+        self.capture_region_window_label.setText(capture_region_window_label)
+
+    def __update_statistics_values(self):
+        black_level_text = f"{self.black_level:.0f}" if self.is_tracking else "--"
+
+        # labels
+        self.black_level_numerical_label.setText(f"{black_level_text}")
+        # max
+        self.elevator_tracking_max_label.setText(f"{self.similarity_to_elevator_max:.0f}%")
+        self.tram_tracking_max_label.setText(f"{self.similarity_to_tram_max:.0f}%")
+        self.teleportal_tracking_max_label.setText(f"{self.similarity_to_teleportal_max:.0f}%")
+        self.egg_tracking_max_label.setText(f"{self.similarity_to_egg_max:.0f}%")
+        self.end_screen_tracking_max_label.setText(f"{self.similarity_to_end_screen_max:.0f}%")
+        # values
+        self.elevator_tracking_value_label.setText(f"{self.similarity_to_elevator:.0f}%")
+        self.tram_tracking_value_label.setText(f"{self.similarity_to_tram:.0f}%")
+        self.teleportal_tracking_value_label.setText(f"{self.similarity_to_teleportal:.0f}%")
+        self.egg_tracking_value_label.setText(f"{self.similarity_to_egg:.0f}%")
+        self.end_screen_tracking_value_label.setText(f"{self.similarity_to_end_screen:.0f}%")
+        # threshold
+
+        # progress bars
+        self.entropy_bar.setValue(int(self.blacklevel_entropy))
+        self.elevator_tracking_bar.setValue(int(self.similarity_to_elevator))
+        self.tram_tracking_bar.setValue(int(self.similarity_to_tram))
+        self.teleportal_tracking_bar.setValue(int(self.similarity_to_teleportal))
+        self.egg_tracking_bar.setValue(int(self.similarity_to_egg))
+        self.end_screen_tracking_bar.setValue(int(self.similarity_to_end_screen))
+
+    def __update_statistics_display_colors(self):
+        # dynamic colors
+        self.average_luminance_display.setStyleSheet(
+            f"background-color: hsl(0%,0%,{floor(self.average_luminance / 255 * 100)}%)"
+        )
+
+        if self.similarity_to_elevator > self.settings_dict["similarity_threshold_elevator"]:
+            self.elevator_tracking_bar.setStyleSheet(style_progress_bar_pass)
+            self.elevator_threshold_value_line.setStyleSheet(style_threshold_line_pass)
+        else:
+            self.elevator_tracking_bar.setStyleSheet(style_progress_bar_fail)
+            self.elevator_threshold_value_line.setStyleSheet(style_threshold_line_fail)
+
+        if self.similarity_to_tram > self.settings_dict["similarity_threshold_tram"]:
+            self.tram_tracking_bar.setStyleSheet(style_progress_bar_pass)
+            self.tram_threshold_value_line.setStyleSheet(style_threshold_line_pass)
+        else:
+            self.tram_tracking_bar.setStyleSheet(style_progress_bar_fail)
+            self.tram_threshold_value_line.setStyleSheet(style_threshold_line_fail)
+
+        if self.similarity_to_teleportal > self.settings_dict["similarity_threshold_teleportal"]:
+            self.teleportal_tracking_bar.setStyleSheet(style_progress_bar_pass)
+            self.teleportal_threshold_value_line.setStyleSheet(style_threshold_line_pass)
+        else:
+            self.teleportal_tracking_bar.setStyleSheet(style_progress_bar_fail)
+            self.teleportal_threshold_value_line.setStyleSheet(style_threshold_line_fail)
+
+        if self.similarity_to_egg > self.settings_dict["similarity_threshold_egg"]:
+            self.egg_tracking_bar.setStyleSheet(style_progress_bar_pass)
+            self.egg_threshold_value_line.setStyleSheet(style_threshold_line_pass)
+        else:
+            self.egg_tracking_bar.setStyleSheet(style_progress_bar_fail)
+            self.egg_threshold_value_line.setStyleSheet(style_threshold_line_fail)
+
+        if self.similarity_to_end_screen > self.settings_dict["similarity_threshold_end_screen"]:
+            self.end_screen_tracking_bar.setStyleSheet(style_progress_bar_pass)
+            self.end_screen_threshold_value_line.setStyleSheet(style_threshold_line_pass)
+        else:
+            self.end_screen_tracking_bar.setStyleSheet(style_progress_bar_fail)
+            self.end_screen_threshold_value_line.setStyleSheet(style_threshold_line_fail)
+
+    def __update_statistics_widget_locations(self):
+        # dynamic label positioning
+        progress_bar_max_y = 120
+
+        # values
+        x, _ = get_widget_position(self.elevator_tracking_value_widget)
+        move_widget(
+            self.elevator_tracking_value_widget,
+            x,
+            progress_bar_max_y - floor(self.similarity_to_elevator),
+        )
+        x, _ = get_widget_position(self.tram_tracking_value_widget)
+        move_widget(
+            self.tram_tracking_value_widget,
+            x,
+            progress_bar_max_y - floor(self.similarity_to_tram),
+        )
+        x, _ = get_widget_position(self.teleportal_tracking_value_widget)
+        move_widget(
+            self.teleportal_tracking_value_widget,
+            x,
+            progress_bar_max_y - floor(self.similarity_to_teleportal),
+        )
+        x, _ = get_widget_position(self.egg_tracking_value_widget)
+        move_widget(
+            self.egg_tracking_value_widget,
+            x,
+            progress_bar_max_y - floor(self.similarity_to_egg),
+        )
+        x, _ = get_widget_position(self.end_screen_tracking_value_widget)
+        move_widget(
+            self.end_screen_tracking_value_widget,
+            x,
+            progress_bar_max_y - floor(self.similarity_to_end_screen),
+        )
+
+        # max
+        x, _ = get_widget_position(self.elevator_tracking_max_widget)
+        move_widget(
+            self.elevator_tracking_max_widget,
+            x,
+            progress_bar_max_y - floor(self.similarity_to_elevator_max),
+        )
+        x, _ = get_widget_position(self.tram_tracking_max_widget)
+        move_widget(
+            self.tram_tracking_max_widget,
+            x,
+            progress_bar_max_y - floor(self.similarity_to_tram_max),
+        )
+        x, _ = get_widget_position(self.teleportal_tracking_max_widget)
+        move_widget(
+            self.teleportal_tracking_max_widget,
+            x,
+            progress_bar_max_y - floor(self.similarity_to_teleportal_max),
+        )
+        x, _ = get_widget_position(self.egg_tracking_max_widget)
+        move_widget(
+            self.egg_tracking_max_widget,
+            x,
+            progress_bar_max_y - floor(self.similarity_to_egg_max),
+        )
+        x, _ = get_widget_position(self.end_screen_tracking_max_widget)
+        move_widget(
+            self.end_screen_tracking_max_widget,
+            x,
+            progress_bar_max_y - floor(self.similarity_to_end_screen_max),
+        )
+
+        progress_bar_max_y = 134
+
+        # thresholds
+        x, _ = get_widget_position(self.elevator_threshold_value_line)
+        move_widget(
+            self.elevator_threshold_value_line,
+            x,
+            progress_bar_max_y - floor(self.settings_dict["similarity_threshold_elevator"]),
+        )
+        x, _ = get_widget_position(self.tram_threshold_value_line)
+        move_widget(
+            self.tram_threshold_value_line,
+            x,
+            progress_bar_max_y - floor(self.settings_dict["similarity_threshold_tram"]),
+        )
+        x, _ = get_widget_position(self.teleportal_threshold_value_line)
+        move_widget(
+            self.teleportal_threshold_value_line,
+            x,
+            progress_bar_max_y - floor(self.settings_dict["similarity_threshold_teleportal"]),
+        )
+        x, _ = get_widget_position(self.egg_threshold_value_line)
+        move_widget(
+            self.egg_threshold_value_line,
+            x,
+            progress_bar_max_y - floor(self.settings_dict["similarity_threshold_egg"]),
+        )
+        x, _ = get_widget_position(self.end_screen_threshold_value_line)
+        move_widget(
+            self.end_screen_threshold_value_line,
+            x,
+            progress_bar_max_y - floor(self.settings_dict["similarity_threshold_end_screen"]),
+        )
+
+    def __on_take_screenshot_button_pressed(self):
+        capture_view = self.get_capture_type_for_screenshots(self.settings_dict["capture_view_preview"])
+        if not is_valid_image(capture_view):
+            error_messages.invalid_screenshot()
+            return
+
+        if not self.settings_dict["screenshot_directory"]:
+            set_screenshot_location(self)
+
+        if not self.settings_dict["screenshot_directory"]:
+            error_messages.screenshot_directory_not_set()
+            return
+
+        now = LocalTime()
+
+        filename = get_sanitized_filename(f"zdcurtain_{now.date}")
+
+        take_screenshot(
+            self.settings_dict["screenshot_directory"],
+            filename,
+            capture_view,
+        )
+
     @override
     def closeEvent(self, event: QtGui.QCloseEvent | None = None):
         """Exit safely when closing the window."""
@@ -574,254 +840,3 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
         # Fallthrough case: Prevent program from closing.
         event.ignore()
-
-
-def throw_out_in_progress_load(_zdcurtain_ref: "ZDCurtain"):
-    if _zdcurtain_ref.load_removal_session is None:
-        return
-
-    if _zdcurtain_ref.is_load_being_removed:
-        load_lost_at = LocalTime()
-
-        lost_load_record = _zdcurtain_ref.load_removal_session.create_lost_load_record(
-            _zdcurtain_ref.active_load_type, load_lost_at
-        )
-
-        _zdcurtain_ref.previous_loads_list.insertItem(0, lost_load_record.to_string())
-
-        _zdcurtain_ref.show_error_signal.emit(
-            lambda: error_messages.capture_stream_lost_during_load(load_lost_at)
-        )
-
-        end_tracking_load(_zdcurtain_ref)
-
-
-def on_capture_state_changed(_zdcurtain_ref: "ZDCurtain"):
-    if (
-        _zdcurtain_ref.settings_dict["captured_window_title"]
-        != _zdcurtain_ref.captured_window_title_before_load
-        and _zdcurtain_ref.is_load_being_removed
-    ):
-        # it looks like the capture state changed in the middle of a load, we should give a warning
-        throw_out_in_progress_load(_zdcurtain_ref)
-
-    _zdcurtain_ref.timer_capture_stream_timed_out.stop()
-
-    _zdcurtain_ref.attempt_to_recover_capture_if_lost = True
-    _zdcurtain_ref.set_active_capture_dependencies_enabled(should_be_enabled=True)
-
-
-def update_ui(_zdcurtain_ref: "ZDCurtain"):
-    # Update title from target window or Capture Device name
-    capture_region_window_label = (
-        _zdcurtain_ref.settings_dict["capture_device_name"]
-        if _zdcurtain_ref.settings_dict["capture_method"] == CaptureMethodEnum.VIDEO_CAPTURE_DEVICE
-        else _zdcurtain_ref.settings_dict["captured_window_title"]
-    )
-
-    if (
-        is_valid_image(_zdcurtain_ref.capture_view_raw)
-        and not _zdcurtain_ref.reset_statistics_button.isEnabled()
-    ):
-        _zdcurtain_ref.set_active_capture_dependencies_enabled(should_be_enabled=True)
-
-    if (
-        not is_valid_image(_zdcurtain_ref.capture_view_raw)
-        and _zdcurtain_ref.reset_statistics_button.isEnabled()
-    ):
-        _zdcurtain_ref.set_active_capture_dependencies_enabled(should_be_enabled=False)
-
-    _zdcurtain_ref.capture_region_window_label.setText(capture_region_window_label)
-
-    black_level_text = f"{_zdcurtain_ref.black_level:.0f}" if _zdcurtain_ref.is_tracking else "--"
-
-    # labels
-    _zdcurtain_ref.black_level_label.setText(f"{black_level_text}")
-    _zdcurtain_ref.elevator_tracking_max_label.setText(f"{_zdcurtain_ref.similarity_to_elevator_max:.0f}")
-    _zdcurtain_ref.tram_tracking_max_label.setText(f"{_zdcurtain_ref.similarity_to_tram_max:.0f}")
-    _zdcurtain_ref.teleportal_tracking_max_label.setText(f"{_zdcurtain_ref.similarity_to_teleportal_max:.0f}")
-    _zdcurtain_ref.egg_tracking_max_label.setText(f"{_zdcurtain_ref.similarity_to_egg_max:.0f}")
-    _zdcurtain_ref.end_screen_tracking_max_label.setText(f"{_zdcurtain_ref.similarity_to_end_screen_max:.0f}")
-
-    # progress bars
-    _zdcurtain_ref.entropy_bar.setValue(int(_zdcurtain_ref.blacklevel_entropy))
-    _zdcurtain_ref.elevator_tracking_bar.setValue(int(_zdcurtain_ref.similarity_to_elevator))
-    _zdcurtain_ref.tram_tracking_bar.setValue(int(_zdcurtain_ref.similarity_to_tram))
-    _zdcurtain_ref.teleportal_tracking_bar.setValue(int(_zdcurtain_ref.similarity_to_teleportal))
-    _zdcurtain_ref.egg_tracking_bar.setValue(int(_zdcurtain_ref.similarity_to_egg))
-    _zdcurtain_ref.end_screen_tracking_bar.setValue(int(_zdcurtain_ref.similarity_to_end_screen))
-
-    # dynamic colors
-    _zdcurtain_ref.black_average_label.setStyleSheet(
-        f"background-color: hsl(0%,0%,{floor(_zdcurtain_ref.average_luminance / 255 * 100)}%)"
-    )
-
-    _zdcurtain_ref.elevator_tracking_bar.setStyleSheet(
-        style_progress_bar_pass
-        if _zdcurtain_ref.similarity_to_elevator
-        > _zdcurtain_ref.settings_dict["similarity_threshold_elevator"]
-        else style_progress_bar_fail
-    )
-    _zdcurtain_ref.tram_tracking_bar.setStyleSheet(
-        style_progress_bar_pass
-        if _zdcurtain_ref.similarity_to_tram > _zdcurtain_ref.settings_dict["similarity_threshold_tram"]
-        else style_progress_bar_fail
-    )
-    _zdcurtain_ref.teleportal_tracking_bar.setStyleSheet(
-        style_progress_bar_pass
-        if _zdcurtain_ref.similarity_to_teleportal
-        > _zdcurtain_ref.settings_dict["similarity_threshold_teleportal"]
-        else style_progress_bar_fail
-    )
-    _zdcurtain_ref.egg_tracking_bar.setStyleSheet(
-        style_progress_bar_pass
-        if _zdcurtain_ref.similarity_to_egg > _zdcurtain_ref.settings_dict["similarity_threshold_egg"]
-        else style_progress_bar_fail
-    )
-    _zdcurtain_ref.end_screen_tracking_bar.setStyleSheet(
-        style_progress_bar_pass
-        if _zdcurtain_ref.similarity_to_end_screen
-        > _zdcurtain_ref.settings_dict["similarity_threshold_end_screen"]
-        else style_progress_bar_fail
-    )
-
-    # dynamic label positioning
-
-    progress_bar_max_y = 120
-
-    x, _ = get_widget_position(_zdcurtain_ref.elevator_tracking_max_widget)
-
-    move_widget(
-        _zdcurtain_ref.elevator_tracking_max_widget,
-        x,
-        progress_bar_max_y - floor(_zdcurtain_ref.similarity_to_elevator_max),
-    )
-
-    x, _ = get_widget_position(_zdcurtain_ref.tram_tracking_max_widget)
-
-    move_widget(
-        _zdcurtain_ref.tram_tracking_max_widget,
-        x,
-        progress_bar_max_y - floor(_zdcurtain_ref.similarity_to_tram_max),
-    )
-
-    x, _ = get_widget_position(_zdcurtain_ref.teleportal_tracking_max_widget)
-
-    move_widget(
-        _zdcurtain_ref.teleportal_tracking_max_widget,
-        x,
-        progress_bar_max_y - floor(_zdcurtain_ref.similarity_to_teleportal_max),
-    )
-
-    x, _ = get_widget_position(_zdcurtain_ref.egg_tracking_max_widget)
-
-    move_widget(
-        _zdcurtain_ref.egg_tracking_max_widget,
-        x,
-        progress_bar_max_y - floor(_zdcurtain_ref.similarity_to_egg_max),
-    )
-
-    x, _ = get_widget_position(_zdcurtain_ref.end_screen_tracking_max_widget)
-
-    move_widget(
-        _zdcurtain_ref.end_screen_tracking_max_widget,
-        x,
-        progress_bar_max_y - floor(_zdcurtain_ref.similarity_to_end_screen_max),
-    )
-
-
-def load_images(_zdcurtain_ref):
-    _zdcurtain_ref.elevator_icon = read_image("res/icons/elevator_icon.png")
-    _zdcurtain_ref.tram_icon = read_image("res/icons/tram_icon.png")
-    _zdcurtain_ref.teleportal_icon = read_image("res/icons/teleportal_icon.png")
-    _zdcurtain_ref.capsule_icon = read_image("res/icons/capsule_icon.png")
-    _zdcurtain_ref.gunship_icon = read_image("res/icons/gunship_icon_small.png")
-    _zdcurtain_ref.loading_icon = read_image("res/icons/loading_icon.png")
-
-    load_comparison_images(_zdcurtain_ref)
-
-
-def load_comparison_images(_zdcurtain_ref):
-    _zdcurtain_ref.comparison_capsule_gravity = read_and_format_zdimage("res/comparison/capsule_gravity.png")
-    _zdcurtain_ref.comparison_capsule_power = read_and_format_zdimage("res/comparison/capsule_power.png")
-    _zdcurtain_ref.comparison_capsule_varia = read_and_format_zdimage("res/comparison/capsule_varia.png")
-    _zdcurtain_ref.comparison_elevator_gravity = read_and_format_zdimage(
-        "res/comparison/elevator_gravity.png"
-    )
-    _zdcurtain_ref.comparison_elevator_power = read_and_format_zdimage("res/comparison/elevator_power.png")
-    _zdcurtain_ref.comparison_elevator_varia = read_and_format_zdimage("res/comparison/elevator_varia.png")
-    _zdcurtain_ref.comparison_teleport_gravity = read_and_format_zdimage(
-        "res/comparison/teleport_gravity.png"
-    )
-    _zdcurtain_ref.comparison_teleport_power = read_and_format_zdimage("res/comparison/teleport_power.png")
-    _zdcurtain_ref.comparison_teleport_varia = read_and_format_zdimage("res/comparison/teleport_varia.png")
-    _zdcurtain_ref.comparison_train_left_gravity = read_and_format_zdimage(
-        "res/comparison/train_left_gravity.png"
-    )
-    _zdcurtain_ref.comparison_train_left_power = read_and_format_zdimage(
-        "res/comparison/train_left_power.png"
-    )
-    _zdcurtain_ref.comparison_train_left_varia = read_and_format_zdimage(
-        "res/comparison/train_left_varia.png"
-    )
-    _zdcurtain_ref.comparison_train_right_gravity = read_and_format_zdimage(
-        "res/comparison/train_right_gravity.png"
-    )
-    _zdcurtain_ref.comparison_train_right_power = read_and_format_zdimage(
-        "res/comparison/train_right_power.png"
-    )
-    _zdcurtain_ref.comparison_train_right_varia = read_and_format_zdimage(
-        "res/comparison/train_right_varia.png"
-    )
-    _zdcurtain_ref.comparison_end_screen = read_and_format_zdimage("res/comparison/end_screen.png")
-
-
-def read_image(filename):
-    image = imread(resource_path(filename), cv2.IMREAD_UNCHANGED)
-
-    if image.shape[ImageShape.Channels] == BGR_CHANNEL_COUNT:
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGRA)
-    else:
-        image = cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
-
-    return image
-
-
-def read_and_format_zdimage(filename):
-    return ZDImage(resource_path(filename))
-
-
-def set_preview_image(qlabel: QLabel, image: MatLike | None):
-    if not is_valid_image(image):
-        # Clear current pixmap if no image. But don't clear text
-        if not qlabel.text():
-            qlabel.clear()
-    else:
-        height, width, channels = image.shape
-
-        if channels == BGRA_CHANNEL_COUNT:
-            image_format = QtGui.QImage.Format.Format_RGBA8888
-            capture = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
-        else:
-            image_format = QtGui.QImage.Format.Format_BGR888
-            capture = image
-
-        qimage = QtGui.QImage(capture.data, width, height, width * channels, image_format)
-        qlabel.setPixmap(
-            QtGui.QPixmap(qimage).scaled(
-                qlabel.size(),
-                QtCore.Qt.AspectRatioMode.IgnoreAspectRatio,
-                QtCore.Qt.TransformationMode.SmoothTransformation,
-            )
-        )
-
-
-def select_window_and_start_tracking(_zdcurtain_ref):
-    select_window(_zdcurtain_ref)
-
-    if (
-        _zdcurtain_ref.settings_dict["start_tracking_automatically"]
-        and not _zdcurtain_ref.is_tracking
-        and is_valid_image(_zdcurtain_ref.capture_view_raw)
-    ):
-        _zdcurtain_ref.begin_tracking()

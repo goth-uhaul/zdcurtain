@@ -54,7 +54,17 @@
     </rect>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Created by &lt;a href=&quot;https://bsky.app/profile/jayena.hijumpboots.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;jay&lt;/span&gt;&lt;/a&gt; for the &lt;a href=&quot;https://discord.gg/metroid-dread-speedrunning-855892393048014858&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;Metroid Dread Speedrunning Community&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Special Thanks to: &lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://bsky.app/profile/mayberryzoom.bsky.social&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;may_berry&lt;/span&gt;&lt;/a&gt;, &lt;a href=&quot;https://bsky.app/profile/arcanox.me&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;Arcanox&lt;/span&gt;&lt;/a&gt;, and &lt;a href=&quot;https://bsky.app/profile/valefor-m.bsky.social&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;Vale&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;Based on &lt;a href=&quot;https://github.com/Toufool/AutoSplit&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;AutoSplit&lt;/span&gt;&lt;/a&gt; by Toufool, Faschz, and Avasam.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;meta charset=&quot;utf-8&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+hr { height: 1px; border-width: 0; }
+li.unchecked::marker { content: &quot;\2610&quot;; }
+li.checked::marker { content: &quot;\2612&quot;; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Created by &lt;a href=&quot;https://bsky.app/profile/jayena.hijumpboots.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;jay&lt;/span&gt;&lt;/a&gt; for the &lt;a href=&quot;https://discord.gg/metroid-dread-speedrunning-855892393048014858&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;Metroid Dread Speedrunning Community&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Special Thanks to: &lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Arcanox, Hobbit, Manijure, may_berry, Trisha&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Based on &lt;a href=&quot;https://github.com/Toufool/AutoSplit&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#27bf73;&quot;&gt;AutoSplit&lt;/span&gt;&lt;/a&gt; by Toufool, Faschz, and Avasam.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -266,9 +276,7 @@
   <zorder>version_label</zorder>
   <zorder>groupBox</zorder>
  </widget>
- <resources>
-  <include location="resources.qrc"/>
- </resources>
+ <resources/>
  <connections>
   <connection>
    <sender>ok_button</sender>
