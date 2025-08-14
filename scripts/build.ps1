@@ -16,7 +16,7 @@ $arguments = @(
   "--add-data=$ProjectRoot/res/comparison/*.png:res/comparison/",
   "--add-data=$ProjectRoot/res/icons/*.png:res/icons/",
   "--upx-dir=$PSScriptRoot/.upx"
-  "--icon=$ProjectRoot/res/icon.ico")
+  "--icon=$ProjectRoot/icon.ico")
 if ($SupportsSplashScreen) {
   # https://github.com/pyinstaller/pyinstaller/issues/9022
   # $arguments += @("--splash=$ProjectRoot/res/splash.png")

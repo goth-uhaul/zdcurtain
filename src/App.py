@@ -35,7 +35,7 @@ def main():
     # Call to QApplication outside the try-except so we can show error messages
     app = QApplication(sys.argv)
     try:
-        app.setWindowIcon(QtGui.QIcon("icon.ico"))
+        app.setWindowIcon(QtGui.QIcon("../icon.ico"))
 
         if is_already_open():
             error_messages.already_open()
