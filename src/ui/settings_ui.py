@@ -161,9 +161,13 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
             self._zdcurtain_ref.settings_dict["similarity_threshold_teleportal"]
         )
         self.egg_similarity_spinbox.setValue(self._zdcurtain_ref.settings_dict["similarity_threshold_egg"])
+        self.end_screen_similarity_spinbox.setValue(
+            self._zdcurtain_ref.settings_dict["similarity_threshold_end_screen"]
+        )
         self.start_tracking_automatically_checkbox.setChecked(
             self._zdcurtain_ref.settings_dict["start_tracking_automatically"]
         )
+
         self.clear_previous_session_on_begin_tracking_checkbox.setChecked(
             self._zdcurtain_ref.settings_dict["clear_previous_session_on_begin_tracking"]
         )
@@ -236,6 +240,7 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 self.clear_previous_session_on_begin_tracking_checkbox.isChecked(),
             )
         )
+
         self.live_capture_region_checkbox.stateChanged.connect(
             lambda: self.__set_value(
                 "live_capture_region",
@@ -244,6 +249,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         )
 
         # screenshots
+        self.locations_screenshot_folder_input.setText(
+            self._zdcurtain_ref.settings_dict["screenshot_directory"]
+        )
         self.locations_screenshot_folder_button.clicked.connect(
             lambda: self.__on_screenshot_location_folder_button_pressed(self._zdcurtain_ref)
         )

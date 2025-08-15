@@ -488,6 +488,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             self.__begin_tracking()
         elif self.load_removal_session is None:
             self.load_removal_session = LoadRemovalSession()
+        else:
             self.__begin_tracking()
 
     def __reset_load_data(self):
