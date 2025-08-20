@@ -17,9 +17,9 @@ pyautogui.FAILSAFE = False
 SET_HOTKEY_TEXT = "Set Hotkey"
 PRESS_A_KEY_TEXT = "Press a key..."
 
-CommandStr = Literal["pause"]
-Hotkey = Literal["pause"]
-HOTKEYS = ("pause",)
+CommandStr = Literal["take_screenshot"]
+Hotkey = Literal["take_screenshot"]
+HOTKEYS = ("take_screenshot",)
 
 
 def remove_all_hotkeys():
@@ -49,8 +49,8 @@ def after_setting_hotkey(zdcurtain: "ZDCurtain"):
 
 def send_command(zdcurtain: "ZDCurtain", command: CommandStr):
     match command:
-        case "pause":
-            _send_hotkey(zdcurtain.settings_dict["pause_hotkey"])
+        case "take_screenshot":
+            _send_hotkey(zdcurtain.settings_dict["take_screenshot_hotkey"])
         case _:
             raise KeyError(f"{command!r} is not a valid command")
 

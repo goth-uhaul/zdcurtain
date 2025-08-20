@@ -30,21 +30,21 @@ from typing import NoReturn, override
 
 import cv2
 from cv2.typing import MatLike
-from gen import about as about_ui, settings as settings_ui, zdcurtain as zdcurtain_ui
+from gen import about as about_ui, overlay as overlay_ui, settings as settings_ui, zdcurtain as zdcurtain_ui
 from PySide6 import QtCore, QtGui
 from PySide6.QtGui import QActionGroup
-from PySide6.QtWidgets import QMainWindow
+from PySide6.QtWidgets import QApplication, QMainWindow
 
 import error_messages
 from capture_method import CaptureMethodBase, CaptureMethodEnum
-from frame_analysis import get_black_screen_detection_area, normalize_brightness_histogram
+from frame_analysis import crop_image, normalize_brightness_histogram
 from hotkeys import HOTKEYS, after_setting_hotkey
 from image_utilities import load_comparison_images, load_images, set_preview_image, take_screenshot
 from load_removal import (
+    mark_load_as_lost,
     perform_black_level_analysis,
     perform_load_removal_logic,
     perform_similarity_analysis,
-    throw_out_in_progress_load,
 )
 from load_tracking import LoadRemovalSession, export_tracked_loads
 from region_selection import select_window
@@ -55,6 +55,7 @@ from stylesheets import (
     style_threshold_line_pass,
 )
 from ui.about_ui import open_about
+from ui.overlay_ui import open_overlay
 from ui.settings_ui import get_default_settings_from_ui, open_settings, set_screenshot_location
 from user_profile import (
     DEFAULT_PROFILE,
@@ -69,6 +70,7 @@ from utils import (
     LocalTime,
     create_icon,
     create_yes_no_dialog,
+    debug_log,
     get_sanitized_filename,
     get_widget_position,
     is_valid_image,
@@ -81,9 +83,12 @@ from ZDImage import ZDImage, resize_image
 
 class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     # Signals
-    pause_signal = QtCore.Signal()
     capture_state_changed_signal = QtCore.Signal()
     after_setting_hotkey_signal = QtCore.Signal()
+    after_changing_icon_signal = QtCore.Signal()
+    after_load_list_changed_signal = QtCore.Signal()
+    # hotkey signals
+    take_screenshot_signal = QtCore.Signal()
     # Use this signal when trying to show an error from outside the main thread
     show_error_signal = QtCore.Signal(FunctionType)
 
@@ -97,9 +102,12 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
     SettingsWidget: settings_ui.Ui_SettingsWidget | None = None
     AboutWidget: about_ui.Ui_AboutZDCurtainWidget | None = None
+    OverlayWidget: overlay_ui.Ui_OverlayWidget | None = None
 
     def __init__(self):
         super().__init__()
+
+        debug_log(f"ZDCurtain v.{ZDCURTAIN_VERSION}")
 
         self.__init_variables()
         self.__init_measurement_variables()
@@ -125,6 +133,18 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.settings_dict = get_default_settings_from_ui()
 
         # Menu
+
+        self.action_hide_analysis_elements.setChecked(self.settings_dict["hide_analysis_elements"])
+        self.action_show_frame_info.setChecked(not self.settings_dict["hide_frame_info"])
+
+        self.end_screen_tracking_bar.setHidden(True)
+        self.end_screen_tracking_max_label.setHidden(True)
+        self.end_screen_tracking_max_line.setHidden(True)
+        self.end_screen_tracking_value_label.setHidden(True)
+        self.end_screen_tracking_value_line.setHidden(True)
+        self.end_screen_tracking_icon.setHidden(True)
+        self.end_screen_threshold_value_line.setHidden(True)
+
         self.__setup_bindings()
 
         self.timer_main.start(int(ONE_SECOND / 60))
@@ -142,46 +162,61 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         load_settings_on_open(self)
 
     def __init_measurement_variables(self):
-        # load removal
+        self.load_removal_session = None
         self.is_tracking = False
-        self.is_load_being_removed = False
+
+        # load classification and measurement
+        self.active_load_type = "none"
+        self.potential_load_type = "none"
+        self.load_cooldown_type = "none"
         self.single_load_time_removed_ms = 0.0
         self.load_time_removed_ms = 0.0
-        self.load_removal_session = None
+        self.load_cooldown_timestamp = 0
+
+        # frame classification
+        self.average_luminance = 0.0
+        self.full_black_level = 1.0
+        self.full_shannon_entropy = 100.0
+        self.slice_black_level = 1.0
+        self.slice_shannon_entropy = 100.0
+        self.similarity_to_egg = 0.0
+        self.similarity_to_elevator = 0.0
+        self.similarity_to_end_screen = 0.0
+        self.similarity_to_game_over_screen: int = 0
+        self.similarity_to_loading_widget: int = 0
+        self.similarity_to_teleportal = 0.0
+        self.similarity_to_tram = 0.0
+
+        # intra-load timestamping and measurement
+        self.last_black_screen_time = 0
+        self.full_black_detected_at_timestamp = 0
+        self.full_black_over_detected_at_timestamp = 0
+        self.slice_black_detected_at_timestamp = 0
+        self.slice_black_over_detected_at_timestamp = 0
+        self.confirmed_load_detected_at_timestamp = 0
+        self.potential_load_detected_at_timestamp = 0
+        self.load_confidence_delta = 0
         self.captured_window_title_before_load = ""
 
-        # Confidence algorithm
-        self.black_screen_detected_at_timestamp = 0
-        self.black_screen_over_detected_at_timestamp = 0
-        self.potential_load_detected_at_timestamp = 0
-        self.confirmed_load_detected_at_timestamp = 0
-        self.load_confidence_delta = 0
-
+        # frame status
         self.in_black_screen = False
+        self.in_black_slice = False
         self.in_game_over_screen = False
-        self.last_black_screen_time = 0
-        self.active_load_type = "none"
-
-        self.load_cooldown_timestamp = 0
-        self.load_cooldown_is_active = False
-        self.load_cooldown_type = "none"
-
-        # Heuristics
-        self.black_level = 1.0
-        self.blacklevel_entropy = 0.0
-        self.average_luminance = 0.0
         self.is_frame_black = False
-        self.similarity_to_tram = 0.0
-        self.similarity_to_tram_max = 0.0
-        self.similarity_to_teleportal = 0.0
-        self.similarity_to_teleportal_max = 0.0
-        self.similarity_to_elevator = 0.0
-        self.similarity_to_elevator_max = 0.0
-        self.similarity_to_egg = 0.0
+        self.is_load_being_removed = False
+        self.should_block_load_detection = False
+        self.load_cooldown_is_active = False
+
+        # load classification extreme values
+        self.full_shannon_entropy_min = 100.0
+        self.slice_shannon_entropy_min = 100.0
         self.similarity_to_egg_max = 0.0
-        self.similarity_to_end_screen = 0.0
+        self.similarity_to_elevator_max = 0.0
         self.similarity_to_end_screen_max = 0.0
-        self.similarity_to_game_over_screen = 0.0
+        self.similarity_to_game_over_screen_max: int = 0
+        self.similarity_to_loading_widget_max: int = 0
+        self.similarity_to_teleportal_max = 0.0
+        self.similarity_to_tram_max = 0.0
 
         # performance
         self.last_frame_time = 1
@@ -206,6 +241,10 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.tram_icon = None
         self.teleportal_icon = None
         self.capsule_icon = None
+        self.elevator_icon_tentative = None
+        self.tram_icon_tentative = None
+        self.teleportal_icon_tentative = None
+        self.capsule_icon_tentative = None
         self.gunship_icon = None
         self.loading_icon = None
         self.loading_icon_grayed = None
@@ -228,10 +267,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.comparison_train_right_varia: ZDImage
         self.comparison_end_screen: ZDImage
         self.comparison_game_over_screen: ZDImage
-        self.comparison_game_over_screen_dimmed: ZDImage
-
-        # screenshots
-        self.screenshot_counter = 1
+        self.comparison_loading_widget: ZDImage
 
     def __bind_icons(self):
         create_icon(self.elevator_tracking_icon, self.elevator_icon)
@@ -254,8 +290,12 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             lambda: self.set_capture_type_for_screenshots("normalized_resized")
         )
         self.action_hide_analysis_elements.changed.connect(
-            lambda: self.set_analysis_elements_hidden(self.settings_dict["hide_analysis_elements"])
+            lambda: self.set_analysis_elements_hidden(self.action_hide_analysis_elements.isChecked())
         )
+        self.action_show_frame_info.changed.connect(
+            lambda: self.set_frame_info_hidden(not self.action_show_frame_info.isChecked())
+        )
+        self.action_show_stream_overlay.triggered.connect(lambda: open_overlay(self))
         self.action_export_tracked_loads.triggered.connect(
             lambda: export_tracked_loads(self.load_removal_session)
         )
@@ -275,6 +315,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         # connect signals to functions
         self.after_setting_hotkey_signal.connect(lambda: after_setting_hotkey(self))
         self.capture_state_changed_signal.connect(self.on_capture_state_changed)
+        self.after_load_list_changed_signal.connect(self.refresh_previous_loads_list)
 
         self.timer_main.timeout.connect(self.__run_app_logic)
         self.timer_frame_analysis.timeout.connect(
@@ -287,6 +328,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
         # function bindings
         self.set_analysis_elements_hidden(self.settings_dict["hide_analysis_elements"])
+        self.set_frame_info_hidden(self.settings_dict["hide_frame_info"])
         self.set_capture_type_for_screenshots(self.settings_dict["capture_view_preview"])
 
         # Set up capture view select
@@ -298,12 +340,11 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     def __select_window_and_start_tracking(self):
         select_window(self)
 
-        if (
-            self.settings_dict["start_tracking_automatically"]
-            and not self.is_tracking
-            and is_valid_image(self.capture_view_raw)
-        ):
-            self.begin_tracking()
+        if is_valid_image(self.capture_view_raw):
+            self.setWindowTitle(f"ZDCurtain v.{ZDCURTAIN_VERSION}")
+
+            if self.settings_dict["start_tracking_automatically"] and not self.is_tracking:
+                self.begin_tracking()
 
     def __try_to_recover_capture(self):
         self.capture_view_raw = None
@@ -325,6 +366,8 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         return self.capture_view_raw
 
     def __give_up_capture_recovery(self):
+        self.setWindowTitle(f"**LOST CAPTURE** ZDCurtain v.{ZDCURTAIN_VERSION}")
+        QApplication.alert(self, 0)
         self.attempt_to_recover_capture_if_lost = False
         self.ever_had_capture = False
         self.timer_capture_stream_timed_out.stop()
@@ -353,6 +396,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
                 dim = (640, 360)
                 self.capture_view_resized = resize_image(self.capture_view_raw, dim, 1, cv2.INTER_AREA)
+
                 self.capture_view_resized_normalized = normalize_brightness_histogram(
                     self.capture_view_resized
                 )
@@ -365,8 +409,14 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                     set_preview_image(self.live_image, capture_view_to_use)
 
                 if self.is_tracking:
-                    self.capture_view_resized_cropped = get_black_screen_detection_area(
-                        self.capture_view_resized
+                    bsd_area = self.settings_dict["black_screen_detection_region"]
+
+                    self.capture_view_resized_cropped = crop_image(
+                        self.capture_view_resized,
+                        bsd_area["x"],
+                        bsd_area["y"],
+                        bsd_area["x"] + bsd_area["width"],
+                        bsd_area["y"] + bsd_area["height"],
                     )
 
                     perform_black_level_analysis(self)
@@ -380,7 +430,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                 if not self.timer_capture_stream_timed_out.isActive():
                     self.timer_capture_stream_timed_out.start(self.settings_dict["capture_stream_timeout_ms"])
                     # if it happens during a currently tracked load, stop tracking the load IMMEDIATELY
-                    throw_out_in_progress_load(self)
+                    mark_load_as_lost(self)
 
                 self.__try_to_recover_capture()
 
@@ -388,15 +438,25 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
         frame_time = ns_to_ms(frame_end_time - frame_start_time)
 
-        if self.black_screen_detected_at_timestamp <= self.black_screen_over_detected_at_timestamp:
+        if self.full_black_detected_at_timestamp <= self.full_black_over_detected_at_timestamp:
             self.last_black_screen_time = ns_to_ms(
-                self.black_screen_over_detected_at_timestamp - self.black_screen_detected_at_timestamp
+                self.full_black_over_detected_at_timestamp - self.full_black_detected_at_timestamp
             )
 
-        self.analysis_status_label.setText(
-            f"Frame Time: {frame_time:.2f}, Game Over: {self.in_game_over_screen}, "
-            + f"{self.similarity_to_game_over_screen:.2f}, "
-            + f"Last Black Screen Duration {self.last_black_screen_time}ms "
+        self.frame_info_label.setText(
+            "Frame Info\n"
+            + f"Load Cooldown Active: {self.load_cooldown_is_active}\n"
+            + f"Frame Time: {frame_time:.2f}\n"
+            + f"Game Over Descriptors Found (current, max): {self.similarity_to_game_over_screen:.0f}, "
+            + f"{self.similarity_to_game_over_screen_max:.0f}\n"
+            + "Loading Widget Descriptors Found (current, max): "
+            + f"{self.similarity_to_loading_widget:.0f}, "
+            + f"{self.similarity_to_loading_widget_max:.0f}\n"
+            + f"In Game Over?: {self.in_game_over_screen}\n"
+            + f"Load Detection Blocked?: {self.should_block_load_detection}\n"
+            + f"Last Black Screen Duration {self.last_black_screen_time}ms\n"
+            + f"Minimum Entropy (full, slice) {self.full_shannon_entropy_min:.2f}, "
+            + f"{self.slice_shannon_entropy_min:.2f}"
         )
 
         tltr_m, tltr_s, tltr_ms = ms_to_msms(self.load_time_removed_ms)
@@ -418,10 +478,6 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             None,
         )
 
-    def pause_timer(self):
-        # TODO: add what to do when you hit pause hotkey, if this even needs to be done
-        pass
-
     def reset_icons(self):
         self.__bind_icons()
 
@@ -430,21 +486,48 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.__reset_load_data()
 
     def __reset_tracking_variables(self):
+        # load classification and measurement
         self.active_load_type = "none"
-        self.black_screen_detected_at_timestamp = 0
-        self.black_screen_over_detected_at_timestamp = 0
-        self.potential_load_detected_at_timestamp = 0
-        self.confirmed_load_detected_at_timestamp = 0
-        self.is_load_being_removed = False
-        self.in_black_screen = False
-        self.black_level = 1.0
-        self.blacklevel_entropy = 100.0
-        self.is_frame_black = False
-        self.last_black_screen_time = 0
-        self.load_confidence_delta = 0
-        self.load_cooldown_timestamp = 0
-        self.load_cooldown_is_active = False
+        self.potential_load_type = "none"
         self.load_cooldown_type = "none"
+        self.single_load_time_removed_ms = 0.0
+        self.load_time_removed_ms = 0.0
+        self.load_cooldown_timestamp = 0
+
+        # frame classification
+        self.average_luminance = 0.0
+        self.full_black_level = 1.0
+        self.full_shannon_entropy = 100.0
+        self.slice_black_level = 1.0
+        self.slice_shannon_entropy = 100.0
+        self.similarity_to_egg = 0.0
+        self.similarity_to_elevator = 0.0
+        self.similarity_to_end_screen = 0.0
+        self.similarity_to_game_over_screen: int = 0
+        self.similarity_to_loading_widget: int = 0
+        self.similarity_to_teleportal = 0.0
+        self.similarity_to_tram = 0.0
+
+        # intra-load timestamping and measurement
+        self.last_black_screen_time = 0
+        self.full_black_detected_at_timestamp = 0
+        self.full_black_over_detected_at_timestamp = 0
+        self.slice_black_detected_at_timestamp = 0
+        self.slice_black_over_detected_at_timestamp = 0
+        self.confirmed_load_detected_at_timestamp = 0
+        self.potential_load_detected_at_timestamp = 0
+        self.load_confidence_delta = 0
+        self.captured_window_title_before_load = ""
+
+        # frame status
+        self.in_black_screen = False
+        self.in_black_slice = False
+        self.in_game_over_screen = False
+        self.is_frame_black = False
+        self.is_load_being_removed = False
+        self.should_block_load_detection = False
+        self.load_cooldown_is_active = False
+
         self.__reset_similarity_variables()
 
     def __reset_similarity_variables(self):
@@ -458,6 +541,14 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.similarity_to_egg_max = 0.0
         self.similarity_to_end_screen = 0.0
         self.similarity_to_end_screen_max = 0.0
+        self.similarity_to_game_over_screen: int = 0
+        self.similarity_to_game_over_screen_max: int = 0
+        self.similarity_to_loading_widget: int = 0
+        self.similarity_to_loading_widget_max: int = 0
+        self.full_shannon_entropy = 100.0
+        self.full_shannon_entropy_min = 100.0
+        self.slice_shannon_entropy = 100.0
+        self.slice_shannon_entropy_min = 100.0
 
     def on_reset_statistics_button_press(self):
         self.__reset_similarity_variables()
@@ -505,8 +596,6 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     def __begin_tracking(self):
         self.is_tracking = True
         self.begin_end_tracking_button.setText("End Tracking")
-        if not self.action_hide_analysis_elements:
-            self.analysis_status_label.show()
 
     def end_tracking(self, *, ending_due_to_error=False):
         if not self.is_tracking:  # we're not tracking, no need to run this
@@ -515,9 +604,6 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.__reset_tracking_variables()
         self.is_tracking = False
         self.begin_end_tracking_button.setText("Begin Tracking")
-
-        if not self.action_hide_analysis_elements:
-            self.analysis_status_label.hide()
 
         if (
             self.load_removal_session is not None
@@ -541,8 +627,10 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     def set_analysis_elements_hidden(self, should_hide):
         self.settings_dict["hide_analysis_elements"] = not should_hide
         self.black_screen_detection_area_label.setHidden(should_hide)
-        self.analysis_status_label.setHidden(should_hide)
-        self.analysis_load_cooldown_label.setHidden(should_hide)
+
+    def set_frame_info_hidden(self, should_hide):
+        self.settings_dict["hide_frame_info"] = not should_hide
+        self.frame_info_label.setHidden(should_hide)
 
     def set_capture_type_for_screenshots(self, capture_type):
         self.settings_dict["capture_view_preview"] = capture_type
@@ -600,7 +688,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             and self.is_load_being_removed
         ):
             # it looks like the capture state changed in the middle of a load, we should give a warning
-            throw_out_in_progress_load(self)
+            mark_load_as_lost(self)
 
         self.timer_capture_stream_timed_out.stop()
 
@@ -635,7 +723,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.capture_region_window_label.setText(capture_region_window_label)
 
     def __update_statistics_values(self):
-        black_level_text = f"{self.black_level:.0f}" if self.is_tracking else "--"
+        black_level_text = f"{self.full_black_level:.0f}" if self.is_tracking else "--"
 
         # labels
         self.black_level_numerical_label.setText(f"{black_level_text}")
@@ -654,7 +742,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         # threshold
 
         # progress bars
-        self.entropy_bar.setValue(int(self.blacklevel_entropy))
+        self.entropy_bar.setValue(int(self.full_shannon_entropy))
         self.elevator_tracking_bar.setValue(int(self.similarity_to_elevator))
         self.tram_tracking_bar.setValue(int(self.similarity_to_tram))
         self.teleportal_tracking_bar.setValue(int(self.similarity_to_teleportal))

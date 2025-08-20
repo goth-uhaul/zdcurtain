@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from math import floor, sqrt
+from math import sqrt
 
 import cv2
 import numpy as np
@@ -25,7 +25,7 @@ def calculate_frame_luminance(capture: MatLike | None) -> tuple[float, float]:
     if hist.sum() > 0:
         prob_dist = hist / hist.sum()
 
-    image_entropy = shannon_entropy(prob_dist, base=2) / 7 * 100  # min 0, max log(bins) = 7
+    image_entropy = shannon_entropy(prob_dist, base=2) / 7 * 100  # min 0, max debug_log(bins) = 7
 
     return average_luminance, image_entropy  # type: ignore - pyright float checking is bad
 
@@ -38,15 +38,6 @@ def crop_image(capture: MatLike | None, x1, y1, x2, y2):
     return capture[y1:y2, x1:x2]
 
 
-def get_black_screen_detection_area(capture: MatLike | None):
-    """Get a cropped capture of the top 40% of the screen."""
-    if not is_valid_image(capture):
-        return None
-
-    capture_height, capture_width, _ = capture.shape
-    return crop_image(capture, 0, 0, capture_width, floor(capture_height * 0.4))
-
-
 MAXRANGE = MAXBYTE + 1
 CHANNELS = (ColorChannel.Red.value, ColorChannel.Green.value, ColorChannel.Blue.value)
 HISTOGRAM_SIZE = (8, 8, 8)
@@ -54,9 +45,11 @@ RANGES = (0, MAXRANGE, 0, MAXRANGE, 0, MAXRANGE)
 MASK_SIZE_MULTIPLIER = ColorChannel.Alpha * MAXBYTE * MAXBYTE
 MAX_VALUE = 1.0
 CV2_PHASH_SIZE = 8
+FLANN_INDEX_LSH = 6
+FD_RATIO_THRESHOLD = 0.8
 
 
-def compare_histograms(source: MatLike, capture: MatLike, mask: MatLike | None = None):
+def compare_histograms(source: MatLike, capture: MatLike, mask: MatLike | None = None, options=None):
     """
     Compares two images by calculating their histograms, normalizing
     them, and then comparing them using Bhattacharyya distance.
@@ -75,7 +68,7 @@ def compare_histograms(source: MatLike, capture: MatLike, mask: MatLike | None =
     return 1 - cv2.compareHist(source_hist, capture_hist, cv2.HISTCMP_BHATTACHARYYA)
 
 
-def compare_l2_norm(source: MatLike, capture: MatLike, mask: MatLike | None = None):
+def compare_l2_norm(source: MatLike, capture: MatLike, mask: MatLike | None = None, options=None):
     """
     Compares two images by calculating the L2 Error (square-root of sum of squared error)
     @param source: Image of any given shape
@@ -113,7 +106,7 @@ def __cv2_phash(source: MatLike, capture: MatLike):
     return 1 - (hash_diff / 64.0)
 
 
-def compare_phash(source: MatLike, capture: MatLike, mask: MatLike | None = None):
+def compare_phash(source: MatLike, capture: MatLike, mask: MatLike | None = None, options=None):
     """
     Compares the Perceptual Hash of the two given images and returns the similarity between the two.
 
@@ -131,6 +124,92 @@ def compare_phash(source: MatLike, capture: MatLike, mask: MatLike | None = None
         capture = cv2.bitwise_and(capture, capture, mask=mask)
 
     return __cv2_phash(source, capture)
+
+
+def compare_fd_orb_bruteforce(source: MatLike, capture: MatLike, *, options=None):
+    if options is None:
+        options = {"nfeatures": 500, "passing_ratio": FD_RATIO_THRESHOLD}
+
+    if not is_valid_image(source):
+        return None
+
+    if not is_valid_image(capture):
+        return None
+
+    source_grayscale = cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
+    capture_grayscale = cv2.cvtColor(capture, cv2.COLOR_BGR2GRAY)
+
+    orb = cv2.ORB_create(nfeatures=options["nfeatures"])  # type: ignore  this exists, pyright
+
+    _, source_descriptors = orb.detectAndCompute(source_grayscale, None)
+    _, capture_descriptors = orb.detectAndCompute(capture_grayscale, None)
+
+    bf = cv2.BFMatcher()  # type: ignore  not necessary
+
+    matches = bf.knnMatch(source_descriptors, capture_descriptors, k=2)
+
+    # need only good matches, so create a mask
+    matches_mask = [[0, 0] for i in range(len(matches))]
+
+    # perform Lowe's ratio test
+    final_matches = []
+    for index in range(len(matches)):
+        if len(matches[index]) == 2:
+            m, n = matches[index]
+            if m.distance < options["passing_ratio"] * n.distance:
+                matches_mask[index] = [1, 0]
+                final_matches.append(matches[index])
+
+    return len(final_matches)
+
+
+def compare_fd_orb_flann(source: MatLike, capture: MatLike, *, options=None):
+    if options is None:
+        options = {"algorithm": FLANN_INDEX_LSH, "nfeatures": 500, "passing_ratio": FD_RATIO_THRESHOLD}
+
+    if "algorithm" not in options:
+        options["algorithm"] = FLANN_INDEX_LSH
+
+    if not is_valid_image(source):
+        return None
+
+    if not is_valid_image(capture):
+        return None
+
+    source_grayscale = cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
+    capture_grayscale = cv2.cvtColor(capture, cv2.COLOR_BGR2GRAY)
+
+    orb = cv2.ORB_create(nfeatures=options["nfeatures"])  # type: ignore  this exists, pyright
+
+    _, source_descriptors = orb.detectAndCompute(source_grayscale, None)
+    _, capture_descriptors = orb.detectAndCompute(capture_grayscale, None)
+
+    # FLANN parameters
+    index_params = {
+        "algorithm": options["algorithm"],
+        "table_number": 6,  # 12
+        "key_size": 12,  # 20
+        "multi_probe_level": 1,
+    }
+    search_params = {}
+
+    flann = cv2.FlannBasedMatcher(index_params, search_params)  # type: ignore  not necessary
+
+    flann_matches = flann.knnMatch(source_descriptors, capture_descriptors, k=2)
+
+    # need only good matches, so create a mask
+    matches_mask = [[0, 0] for i in range(len(flann_matches))]
+
+    # perform Lowe's ratio test
+    final_matches = []
+    for index in range(len(flann_matches)):
+        if len(flann_matches[index]) == 2:
+            m, n = flann_matches[index]
+            if m.distance < options["passing_ratio"] * n.distance:
+                matches_mask[index] = [1, 0]
+                final_matches.append(flann_matches[index])
+
+    return len(final_matches)
 
 
 def normalize_brightness_histogram(capture: MatLike):
@@ -159,7 +238,7 @@ def normalize_brightness_clahe(capture: MatLike):
     return cv2.cvtColor(normalized_image, cv2.COLOR_BGR2BGRA)
 
 
-def __compare_dummy(*_: object):
+def __compare_dummy(*_: object, options=None):
     return 0.0
 
 
@@ -171,5 +250,9 @@ def get_comparison_method_by_name(comparison_method_name: str) -> Callable:
             return compare_histograms
         case "phash":
             return compare_phash
+        case "orb_bf":
+            return compare_fd_orb_bruteforce
+        case "orb_flann":
+            return compare_fd_orb_flann
         case _:
             return __compare_dummy

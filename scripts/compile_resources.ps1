@@ -8,6 +8,7 @@ New-Item ./src/gen/__init__.py -ItemType File -Force | Out-Null
 uv run --active pyside6-uic './res/about.ui' -o './src/gen/about.py'
 uv run --active pyside6-uic './res/zdcurtain.ui' -o './src/gen/zdcurtain.py'
 uv run --active pyside6-uic './res/settings.ui' -o './src/gen/settings.py'
+uv run --active pyside6-uic './res/overlay.ui' -o './src/gen/overlay.py'
 uv run --active pyside6-rcc './res/resources.qrc' -o './src/gen/resources_rc.py'
 $files = Get-ChildItem ./src/gen/ *.py
 foreach ($file in $files) {

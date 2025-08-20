@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import subprocess  # noqa: S404 no new processes are spawned
 import sys
@@ -232,9 +233,9 @@ def list_processes():
         return [
             # The first row is the process name
             line.split()[0]
-            for line in subprocess.check_output("C:/Windows/System32/tasklist.exe", text=True).splitlines()[
-                3:
-            ]  # Skip the table header lines
+            for line in subprocess.run(
+                "C:/Windows/System32/tasklist.exe", check=False, text=True, stdout=subprocess.PIPE
+            ).stdout.splitlines()[3:]  # Skip the table header lines
             if line
         ]
 
@@ -287,6 +288,11 @@ def create_icon(qlabel: QLabel, image: MatLike | None):
 
         qimage = QtGui.QImage(image.data, width, height, width * channels, image_format)
         qlabel.setPixmap(QtGui.QPixmap(qimage))
+
+
+def debug_log(message):
+    logger = logging.getLogger(__name__)
+    logger.debug(message)
 
 
 def create_yes_no_dialog(
@@ -343,6 +349,8 @@ BGR_CHANNEL_COUNT = 3
 """How many channels in a BGR image"""
 BGRA_CHANNEL_COUNT = 4
 """How many channels in a BGRA image"""
+INVALID_COLOR = (-1, -1, -1)
+"""NoneType is not serializable in tomli-w"""
 
 # Environment specifics
 WINDOWS_BUILD_NUMBER = int(version().split(".")[-1]) if sys.platform == "win32" else -1

@@ -18,6 +18,7 @@ if sys.platform == "win32":
     # pywinbox._pywinbox_win.py
     ctypes.windll.shcore.SetProcessDpiAwareness = do_nothing  # pyright: ignore[reportAttributeAccessIssue]
 
+import logging
 import signal
 
 from PySide6 import QtCore, QtGui
@@ -35,6 +36,9 @@ def main():
     # Call to QApplication outside the try-except so we can show error messages
     app = QApplication(sys.argv)
     try:
+        logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+        logging.getLogger("asyncio").setLevel(logging.WARNING)
+
         app.setWindowIcon(QtGui.QIcon("../icon.ico"))
 
         if is_already_open():

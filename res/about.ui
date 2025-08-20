@@ -3,6 +3,9 @@
  <author>Toufool</author>
  <class>AboutZDCurtainWidget</class>
  <widget class="QWidget" name="AboutZDCurtainWidget">
+  <property name="windowModality">
+   <enum>Qt::WindowModality::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -151,6 +154,11 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <item>
      <property name="text">
       <string>keyboard</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>numpy</string>
      </property>
     </item>
     <item>

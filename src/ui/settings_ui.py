@@ -287,10 +287,12 @@ def get_default_settings_from_ui():
         "capture_device_id": default_settings_dialog.capture_device_combobox.currentIndex(),
         "capture_device_name": "",
         "captured_window_title": "",
-        "pause_hotkey": default_settings_dialog.pause_input.text(),
+        "take_screenshot_hotkey": default_settings_dialog.take_screenshot_input.text(),
         "start_tracking_automatically": default_settings_dialog.start_tracking_automatically_checkbox.isChecked(),  # noqa: E501
         "clear_previous_session_on_begin_tracking": default_settings_dialog.clear_previous_session_on_begin_tracking_checkbox.isChecked(),  # noqa: E501
         "hide_analysis_elements": DEFAULT_PROFILE["hide_analysis_elements"],
+        "hide_frame_info": DEFAULT_PROFILE["hide_frame_info"],
+        "overlay_color_key_rgb": DEFAULT_PROFILE["overlay_color_key_rgb"],
         "black_threshold": default_settings_dialog.black_screen_threshold_spinbox.value(),
         "black_entropy_threshold": default_settings_dialog.black_screen_entropy_threshold_spinbox.value(),
         "capture_view_preview": DEFAULT_PROFILE["capture_view_preview"],
@@ -313,6 +315,7 @@ def get_default_settings_from_ui():
         "load_cooldown_tram_ms": DEFAULT_PROFILE["load_cooldown_tram_ms"],
         "load_cooldown_teleportal_ms": DEFAULT_PROFILE["load_cooldown_teleportal_ms"],
         "load_cooldown_egg_ms": DEFAULT_PROFILE["load_cooldown_egg_ms"],
+        "load_cooldown_spinner_ms": DEFAULT_PROFILE["load_cooldown_spinner_ms"],
         "load_confidence_threshold_ms": default_settings_dialog.load_confidence_threshold_spinbox.value(),
         "screenshot_directory": DEFAULT_PROFILE["screenshot_directory"],
         "capture_region": DEFAULT_PROFILE["capture_region"],
@@ -426,16 +429,11 @@ def build_documentation(self):
     self.end_screen_similarity_label.setToolTip(end_screen_similarity_tooltip)
     self.end_screen_similarity_spinbox.setToolTip(end_screen_similarity_tooltip)
 
-    pause_hotkey_tooltip = (
-        "Pauses and unpauses your timer. Set this to the same key\n"
-        + "as you use in your speedrun timer (LiveSplit, etc).\n\n"
-        + 'Note for LiveSplit users: "Double Tap Prevention" MUST\n'
-        + "be UNCHECKED in order for the load remover to work!"
-    )
+    take_screenshot_hotkey_tooltip = "Takes a screenshot when pressed."
 
-    self.pause_label.setToolTip(pause_hotkey_tooltip)
-    self.pause_input.setToolTip(pause_hotkey_tooltip)
-    self.set_pause_hotkey_button.setToolTip(pause_hotkey_tooltip)
+    self.take_screenshot_label.setToolTip(take_screenshot_hotkey_tooltip)
+    self.take_screenshot_input.setToolTip(take_screenshot_hotkey_tooltip)
+    self.set_take_screenshot_hotkey_button.setToolTip(take_screenshot_hotkey_tooltip)
 
     start_tracking_automatically_tooltip = (
         "If this box is checked, ZDCurtain will automatically start\n"

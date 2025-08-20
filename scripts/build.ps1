@@ -12,6 +12,11 @@ $arguments = @(
   '--windowed',
   '--optimize=2', # Remove asserts and docstrings for smaller build
   "--additional-hooks-dir=$ProjectRoot/Pyinstaller/hooks",
+  # Installed by PyAutoGUI
+  '--exclude=pyscreeze',
+  # Sometimes installed by other automation/image libraries.
+  # Keep this exclusion even if nothing currently installs it, to stay future-proof.
+  '--exclude=PIL',
   "--add-data=$ProjectRoot/pyproject.toml$([System.IO.Path]::PathSeparator).",
   "--add-data=$ProjectRoot/res/comparison/*.png:res/comparison/",
   "--add-data=$ProjectRoot/res/icons/*.png:res/icons/",

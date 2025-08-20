@@ -11,6 +11,18 @@
     <height>880</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>816</width>
+    <height>880</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>816</width>
+    <height>880</height>
+   </size>
+  </property>
   <property name="font">
    <font>
     <pointsize>9</pointsize>
@@ -2008,89 +2020,41 @@
     <zorder>egg_threshold_value_line</zorder>
     <zorder>end_screen_threshold_value_line</zorder>
    </widget>
-   <widget class="QLabel" name="analysis_status_label">
+   <widget class="QLabel" name="frame_info_label">
     <property name="enabled">
      <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
-      <x>151</x>
-      <y>350</y>
-      <width>499</width>
-      <height>20</height>
+      <x>10</x>
+      <y>219</y>
+      <width>640</width>
+      <height>151</height>
      </rect>
     </property>
-    <property name="palette">
-     <palette>
-      <active>
-       <colorrole role="WindowText">
-        <brush brushstyle="SolidPattern">
-         <color alpha="255">
-          <red>255</red>
-          <green>255</green>
-          <blue>0</blue>
-         </color>
-        </brush>
-       </colorrole>
-       <colorrole role="Window">
-        <brush brushstyle="SolidPattern">
-         <color alpha="255">
-          <red>0</red>
-          <green>0</green>
-          <blue>0</blue>
-         </color>
-        </brush>
-       </colorrole>
-      </active>
-      <inactive>
-       <colorrole role="WindowText">
-        <brush brushstyle="SolidPattern">
-         <color alpha="255">
-          <red>255</red>
-          <green>255</green>
-          <blue>0</blue>
-         </color>
-        </brush>
-       </colorrole>
-       <colorrole role="Window">
-        <brush brushstyle="SolidPattern">
-         <color alpha="255">
-          <red>0</red>
-          <green>0</green>
-          <blue>0</blue>
-         </color>
-        </brush>
-       </colorrole>
-      </inactive>
-      <disabled>
-       <colorrole role="Window">
-        <brush brushstyle="SolidPattern">
-         <color alpha="255">
-          <red>0</red>
-          <green>0</green>
-          <blue>0</blue>
-         </color>
-        </brush>
-       </colorrole>
-      </disabled>
-     </palette>
-    </property>
     <property name="autoFillBackground">
-     <bool>true</bool>
+     <bool>false</bool>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+	padding-right: 2px;
+	background-color: rgba(0, 0, 0, 127);
+	color: rgb(255, 255, 0);
+}</string>
     </property>
     <property name="text">
      <string>Select a window or device to begin... </string>
     </property>
     <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     <set>Qt::AlignmentFlag::AlignBottom|Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing</set>
     </property>
    </widget>
    <widget class="QLabel" name="black_screen_detection_area_label">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>192</x>
       <y>10</y>
-      <width>640</width>
+      <width>458</width>
       <height>21</height>
      </rect>
     </property>
@@ -2139,83 +2103,6 @@
     </property>
     <property name="alignment">
      <set>Qt::AlignmentFlag::AlignCenter</set>
-    </property>
-   </widget>
-   <widget class="QLabel" name="analysis_load_cooldown_label">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>350</y>
-      <width>141</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="palette">
-     <palette>
-      <active>
-       <colorrole role="WindowText">
-        <brush brushstyle="SolidPattern">
-         <color alpha="255">
-          <red>255</red>
-          <green>255</green>
-          <blue>0</blue>
-         </color>
-        </brush>
-       </colorrole>
-       <colorrole role="Window">
-        <brush brushstyle="SolidPattern">
-         <color alpha="255">
-          <red>0</red>
-          <green>0</green>
-          <blue>0</blue>
-         </color>
-        </brush>
-       </colorrole>
-      </active>
-      <inactive>
-       <colorrole role="WindowText">
-        <brush brushstyle="SolidPattern">
-         <color alpha="255">
-          <red>255</red>
-          <green>255</green>
-          <blue>0</blue>
-         </color>
-        </brush>
-       </colorrole>
-       <colorrole role="Window">
-        <brush brushstyle="SolidPattern">
-         <color alpha="255">
-          <red>0</red>
-          <green>0</green>
-          <blue>0</blue>
-         </color>
-        </brush>
-       </colorrole>
-      </inactive>
-      <disabled>
-       <colorrole role="Window">
-        <brush brushstyle="SolidPattern">
-         <color alpha="255">
-          <red>0</red>
-          <green>0</green>
-          <blue>0</blue>
-         </color>
-        </brush>
-       </colorrole>
-      </disabled>
-     </palette>
-    </property>
-    <property name="autoFillBackground">
-     <bool>true</bool>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
    </widget>
    <widget class="QWidget" name="previous_loads_widget" native="true">
@@ -2466,11 +2353,10 @@ Removal Session</string>
    <zorder>live_image</zorder>
    <zorder>capture_region_window_label</zorder>
    <zorder>statistics_groupbox</zorder>
-   <zorder>analysis_status_label</zorder>
    <zorder>black_screen_detection_area_label</zorder>
-   <zorder>analysis_load_cooldown_label</zorder>
    <zorder>previous_loads_widget</zorder>
    <zorder>buttons_frame</zorder>
+   <zorder>frame_info_label</zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -2512,6 +2398,8 @@ Removal Session</string>
     </widget>
     <addaction name="menuCapture"/>
     <addaction name="action_hide_analysis_elements"/>
+    <addaction name="action_show_frame_info"/>
+    <addaction name="action_show_stream_overlay"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -2520,8 +2408,8 @@ Removal Session</string>
     <addaction name="action_export_tracked_loads"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuView"/>
    <addaction name="menuTools"/>
+   <addaction name="menuView"/>
    <addaction name="menuAbout"/>
   </widget>
   <action name="action_settings">
@@ -2581,6 +2469,19 @@ Removal Session</string>
   <action name="action_export_tracked_loads">
    <property name="text">
     <string>Export Tracked Loads...</string>
+   </property>
+  </action>
+  <action name="action_show_frame_info">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Frame Info</string>
+   </property>
+  </action>
+  <action name="action_show_stream_overlay">
+   <property name="text">
+    <string>Show Stream Overlay</string>
    </property>
   </action>
  </widget>

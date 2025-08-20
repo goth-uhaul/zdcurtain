@@ -3,6 +3,9 @@
  <author>Toufool</author>
  <class>SettingsWidget</class>
  <widget class="QWidget" name="SettingsWidget">
+  <property name="windowModality">
+   <enum>Qt::WindowModality::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -29,11 +32,14 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string>Settings</string>
+   <string>Settings - ZDCurtain</string>
   </property>
   <property name="windowIcon">
    <iconset>
     <normaloff>:/resources/icon.ico</normaloff>:/resources/icon.ico</iconset>
+  </property>
+  <property name="windowOpacity">
+   <double>9.000000000000000</double>
   </property>
   <widget class="QGroupBox" name="capture_settings_groupbox">
    <property name="geometry">
@@ -82,13 +88,13 @@
      <string> FPS</string>
     </property>
     <property name="minimum">
-     <number>20</number>
+     <number>15</number>
     </property>
     <property name="maximum">
      <number>240</number>
     </property>
     <property name="singleStep">
-     <number>2</number>
+     <number>15</number>
     </property>
     <property name="value">
      <number>30</number>
@@ -517,7 +523,7 @@
    <property name="title">
     <string>Hotkeys</string>
    </property>
-   <widget class="QPushButton" name="set_pause_hotkey_button">
+   <widget class="QPushButton" name="set_take_screenshot_hotkey_button">
     <property name="geometry">
      <rect>
       <x>250</x>
@@ -533,7 +539,7 @@
      <string>Set Hotkey</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="pause_input">
+   <widget class="QLineEdit" name="take_screenshot_input">
     <property name="geometry">
      <rect>
       <x>150</x>
@@ -549,7 +555,7 @@
      <bool>true</bool>
     </property>
    </widget>
-   <widget class="QLabel" name="pause_label">
+   <widget class="QLabel" name="take_screenshot_label">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -559,7 +565,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Pause / Resume Timer:</string>
+     <string>Take Screenshot</string>
     </property>
    </widget>
   </widget>
@@ -678,7 +684,7 @@
   </widget>
  </widget>
  <tabstops>
-  <tabstop>set_pause_hotkey_button</tabstop>
+  <tabstop>set_take_screenshot_hotkey_button</tabstop>
   <tabstop>capture_method_combobox</tabstop>
   <tabstop>capture_device_combobox</tabstop>
  </tabstops>

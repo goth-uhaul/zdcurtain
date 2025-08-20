@@ -11,7 +11,7 @@ import error_messages
 from capture_method import CAPTURE_METHODS, CaptureMethodEnum, Region, change_capture_method
 from hotkeys import HOTKEYS, Hotkey, remove_all_hotkeys, set_hotkey
 from ui import settings_ui
-from utils import working_directory
+from utils import INVALID_COLOR, working_directory
 
 if TYPE_CHECKING:
     from ui.zdcurtain_ui import ZDCurtain
@@ -25,10 +25,12 @@ class UserProfileDict(TypedDict):
     capture_device_id: int
     capture_device_name: str
     captured_window_title: str
-    pause_hotkey: str
+    take_screenshot_hotkey: str
     start_tracking_automatically: bool
     clear_previous_session_on_begin_tracking: bool
     hide_analysis_elements: bool
+    hide_frame_info: bool
+    overlay_color_key_rgb: tuple
     black_threshold: float
     black_entropy_threshold: float
     capture_view_preview: str
@@ -51,6 +53,7 @@ class UserProfileDict(TypedDict):
     load_cooldown_tram_ms: int
     load_cooldown_teleportal_ms: int
     load_cooldown_egg_ms: int
+    load_cooldown_spinner_ms: int
     load_confidence_threshold_ms: int
     screenshot_directory: str
     capture_region: Region
@@ -70,12 +73,14 @@ DEFAULT_PROFILE = UserProfileDict(
     capture_device_id=0,
     capture_device_name="",
     captured_window_title="",
-    pause_hotkey="",
+    take_screenshot_hotkey="",
     start_tracking_automatically=True,
     clear_previous_session_on_begin_tracking=True,
     hide_analysis_elements=False,
+    hide_frame_info=False,
+    overlay_color_key_rgb=INVALID_COLOR,
     black_threshold=20,
-    black_entropy_threshold=2,
+    black_entropy_threshold=4,
     capture_view_preview="standard_resized",
     capture_view_elevator="normalized_resized",
     capture_view_tram="standard_resized",
@@ -96,10 +101,11 @@ DEFAULT_PROFILE = UserProfileDict(
     load_cooldown_tram_ms=0,
     load_cooldown_teleportal_ms=0,
     load_cooldown_egg_ms=3000,
+    load_cooldown_spinner_ms=0,
     load_confidence_threshold_ms=500,
     screenshot_directory="",
     capture_region=Region(x=0, y=0, width=1, height=1),
-    black_screen_detection_region=Region(x=0, y=0, width=640, height=134),
+    black_screen_detection_region=Region(x=182, y=0, width=458, height=96),
 )
 
 

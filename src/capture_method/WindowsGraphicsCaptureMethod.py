@@ -59,7 +59,7 @@ Caps at around 60 FPS."""
         frame_pool = Direct3D11CaptureFramePool.create_free_threaded(
             direct3d_device,
             DirectXPixelFormat.B8_G8_R8_A8_UINT_NORMALIZED,
-            1,  # number_of_buffers
+            2,  # number_of_buffers
             item.size,
         )
         if not frame_pool:

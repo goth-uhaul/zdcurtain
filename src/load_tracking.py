@@ -35,6 +35,10 @@ class LoadRemovalSession:
         self.__loads.append(LostLoadEntry(load_type, load_lost_at))
         return self.__loads[-1]
 
+    def create_discarded_load_record(self, load_type, load_discarded_at, discard_type):
+        self.__loads.append(DiscardedLoadEntry(load_type, load_discarded_at, discard_type))
+        return self.__loads[-1]
+
     def get_loads(self):
         return self.__loads
 
@@ -96,12 +100,36 @@ class LostLoadEntry:
             "loadType": self.loadType,
             "loadLostAt": self.loadLostAt.to_dict(),
             "wasLoadLost": "yes",
+            "wasLoadDiscarded": "no",
         }
 
     def to_string(self):
         return (
             f'[{self.loadLostAt.date}]: WARNING: LOST load of type "{self.loadType}", check your '
             + "stream to make sure it's stable."
+        )
+
+
+class DiscardedLoadEntry:
+    def __init__(self, load_type, load_discarded_at, discard_type):
+        self.loadType = load_type
+        self.loadDiscardedAt = load_discarded_at
+        self.discardType = discard_type
+
+    def to_dict(self):
+        return {
+            "loadTimeRemoved": 0,
+            "loadType": self.loadType,
+            "loadDiscardedAt": self.loadDiscardedAt.to_dict(),
+            "wasLoadLost": "no",
+            "wasLoadDiscarded": "yes",
+            "discardType": self.discardType,
+        }
+
+    def to_string(self):
+        return (
+            f"[{self.loadDiscardedAt.date}]: ZDCurtain discarded erroneous load of type "
+            + f'"{self.loadType}", reasoning used: "{self.discardType}"'
         )
 
 
@@ -117,6 +145,7 @@ class LoadRemovalRecordEntry:
             "loadType": self.loadType,
             "loadRemovedAt": self.loadRemovedAt.to_dict(),
             "wasLoadLost": "no",
+            "wasLoadDiscarded": "no",
         }
 
     def to_string(self):
