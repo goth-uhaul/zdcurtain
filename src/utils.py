@@ -6,7 +6,6 @@ import sys
 import tomllib
 from collections.abc import Callable, Iterable, Sequence
 from datetime import datetime
-from functools import partial
 from pathlib import Path
 from platform import version
 from threading import Thread
@@ -201,12 +200,6 @@ def get_or_create_eventloop():
         return asyncio.get_event_loop()
 
 
-def try_input_device_access():
-    """Same as `make_uinput` in `keyboard/_nixcommon.py`."""
-    if sys.platform != "linux":
-        return
-
-
 def fire_and_forget(func: Callable[..., Any]):
     """
     Runs synchronous function asynchronously without waiting for a response.
@@ -219,11 +212,12 @@ def fire_and_forget(func: Callable[..., Any]):
     """
 
     def wrapped(*args: Any, **kwargs: Any):
-        if sys.platform == "win32":
-            thread = Thread(target=func, args=args, kwargs=kwargs)
-            thread.start()
-            return thread
-        return get_or_create_eventloop().run_in_executor(None, partial(func, *args, **kwargs))
+        # win32
+        thread = Thread(target=func, args=args, kwargs=kwargs)
+        thread.start()
+        return thread
+        # macos stub
+        # linux stub
 
     return wrapped
 
@@ -319,6 +313,11 @@ def create_yes_no_dialog(
         yes_method()
     elif decision == QMessageBox.StandardButton.No and no_method is not None:
         no_method()
+
+
+def to_whole_css_rgb(rgb):
+    r, g, b = rgb
+    return f"rgb({round(r)},{round(g)},{round(b)})"  # needs to adhere to CSS 2.1
 
 
 def check_if_image_has_transparency(image: MatLike):

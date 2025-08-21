@@ -21,7 +21,6 @@ dependencies = [
     "scikit-image>=0.25.2",
     "tomli-w>=1.2.0",
     "typed-d3dshot>=1.0.1",
-    "vcolorpicker>=1.4.4",
     "winrt-windows-foundation>=3.2.1",
 ]
 
@@ -41,3 +40,6 @@ dev = [
 
 [tool.pyside6-project]
 files = ["res/about.ui", "res/overlay.ui", "res/settings.ui", "res/zdcurtain.ui"]
+
+[tool.uv]
+find-links = ["res/wheels"]

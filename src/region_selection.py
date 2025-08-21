@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, override
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtTest import QTest
-from pywinctl import getTopWindowAt
 
 import error_messages
 from capture_method import Region
@@ -15,19 +14,8 @@ if sys.platform == "win32":
     import win32gui
     from win32con import SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN
 
-if sys.platform == "linux":
-    from Xlib.display import Display
-
 if TYPE_CHECKING:
     from ui.zdcurtain_ui import ZDCurtain
-
-
-def get_top_window_at(x: int, y: int):
-    """Give QWidget time to disappear to avoid Xlib.error.BadDrawable on Linux."""
-    if sys.platform == "linux":
-        # Tested in increments of 10ms on my Pop!_OS 22.04 VM
-        QTest.qWait(80)
-    return getTopWindowAt(x, y)
 
 
 def select_window(zdcurtain: "ZDCurtain"):
@@ -101,12 +89,7 @@ class BaseSelectWidget(QtWidgets.QWidget):
             y = win32api.GetSystemMetrics(SM_YVIRTUALSCREEN)
             width = win32api.GetSystemMetrics(SM_CXVIRTUALSCREEN)
             height = win32api.GetSystemMetrics(SM_CYVIRTUALSCREEN)
-        else:
-            data = Display().screen().root.get_geometry()._data  # noqa: SLF001
-            x = data["x"]
-            y = data["y"]
-            width = data["width"]
-            height = data["height"]
+
         self.setGeometry(x, y, width, height)
         self.setFixedSize(width, height)  # Prevent move/resizing on Linux
         self.setWindowTitle(type(self).__name__)

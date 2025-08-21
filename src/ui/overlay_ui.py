@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, cast, override
 
 from gen import overlay as overlay_ui
-from PySide6 import QtWidgets
-from vcolorpicker import getColor
+from PySide6 import QtCore, QtWidgets
+from vcolorpicker import ColorPicker
 
-from utils import INVALID_COLOR, create_icon
+from utils import INVALID_COLOR, create_icon, to_whole_css_rgb
 
 if TYPE_CHECKING:
     from ui.zdcurtain_ui import ZDCurtain
@@ -16,6 +16,7 @@ class __OverlayWidget(QtWidgets.QWidget, overlay_ui.Ui_OverlayWidget):
     def __init__(self, zdcurtain: "ZDCurtain"):
         super().__init__()
         self.setupUi(self)
+        self.setWindowFlag(QtCore.Qt.WindowType.WindowStaysOnTopHint, True)
         self._zdcurtain_ref = zdcurtain
         self.__bind_icons()
         self.__change_icon()
@@ -47,14 +48,17 @@ class __OverlayWidget(QtWidgets.QWidget, overlay_ui.Ui_OverlayWidget):
         self.__set_window_color(initial_color)
 
     def __set_window_color(self, color):
-        self.setStyleSheet("#OverlayWidget { background-color: " + f"rgb{color};" + "}")
+        r, g, b = color
+        self.setStyleSheet("#OverlayWidget { background-color: " + to_whole_css_rgb((r, g, b)) + "}")
 
     @override
     def mousePressEvent(self, event):
         color: tuple
         last_color: tuple = tuple(self._zdcurtain_ref.settings_dict["overlay_color_key_rgb"])
 
-        color = getColor(last_color) if last_color != INVALID_COLOR else getColor()
+        color_picker = ColorPicker(alwaysOnTop=True)
+
+        color = color_picker.getColor(last_color) if last_color != INVALID_COLOR else color_picker.getColor()
 
         self._zdcurtain_ref.settings_dict["overlay_color_key_rgb"] = color
         self.__set_window_color(color)

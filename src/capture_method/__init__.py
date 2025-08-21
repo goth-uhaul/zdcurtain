@@ -20,13 +20,6 @@ if sys.platform == "win32":
     from capture_method.ForceFullContentRenderingCaptureMethod import ForceFullContentRenderingCaptureMethod
     from capture_method.WindowsGraphicsCaptureMethod import WindowsGraphicsCaptureMethod
 
-if sys.platform == "linux":
-    import pyscreeze
-    from PIL import UnidentifiedImageError, features
-
-    from capture_method.ScrotCaptureMethod import ScrotCaptureMethod
-    from capture_method.XcbCaptureMethod import XcbCaptureMethod
-
 
 if TYPE_CHECKING:
     from ui.zdcurtain_ui import ZDCurtain
@@ -128,19 +121,7 @@ if sys.platform == "win32":
     else:
         CAPTURE_METHODS[CaptureMethodEnum.DESKTOP_DUPLICATION] = DesktopDuplicationCaptureMethod
     CAPTURE_METHODS[CaptureMethodEnum.PRINTWINDOW_RENDERFULLCONTENT] = ForceFullContentRenderingCaptureMethod
-elif sys.platform == "linux":
-    if features.check_feature(feature="xcb"):
-        CAPTURE_METHODS[CaptureMethodEnum.XCB] = XcbCaptureMethod
-    try:
-        pyscreeze.screenshot()
-    except (UnidentifiedImageError, pyscreeze.PyScreezeException):
-        # TODO: Should we show a specific warning for, or document:
-        # pyscreeze.PyScreezeException: Your computer uses the Wayland window system. Scrot works on the X11 window system but not Wayland. You must install gnome-screenshot by running `sudo apt install gnome-screenshot` # noqa: E501
-        pass
-    else:
-        # TODO: Investigate solution for Slow Scrot:
-        # https://github.com/asweigart/pyscreeze/issues/68
-        CAPTURE_METHODS[CaptureMethodEnum.SCROT] = ScrotCaptureMethod
+
 CAPTURE_METHODS[CaptureMethodEnum.VIDEO_CAPTURE_DEVICE] = VideoCaptureDeviceCaptureMethod
 
 
@@ -184,18 +165,9 @@ class CameraInfo:
 
 
 def get_input_devices():
-    if sys.platform == "win32":
-        return FilterGraph().get_input_devices()
-
-    cameras: list[str] = []
-    if sys.platform == "linux":
-        try:
-            for index in range(len(os.listdir("/sys/class/video4linux"))):
-                with open(f"/sys/class/video4linux/video{index}/name", encoding="utf-8") as file:
-                    cameras.append(file.readline()[:-2])
-        except FileNotFoundError:
-            pass
-    return cameras
+    # win32
+    return FilterGraph().get_input_devices()
+    # linux stub
 
 
 def get_all_video_capture_devices():
