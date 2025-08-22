@@ -65,6 +65,7 @@ from user_profile import (
     save_settings_as,
 )
 from utils import (
+    BLACKOUT_SIDE_LENGTH,
     ONE_SECOND,
     ZDCURTAIN_VERSION,
     LocalTime,
@@ -77,6 +78,7 @@ from utils import (
     move_widget,
     ms_to_msms,
     ns_to_ms,
+    rgba_to_bgra,
 )
 from ZDImage import ZDImage, resize_image
 
@@ -415,10 +417,27 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                     self.ever_had_capture = True
 
                 dim = (640, 360)
-                self.capture_view_resized = resize_image(self.capture_view_raw, dim, 1, cv2.INTER_AREA)
+                self.capture_view_resized = resize_image(self.capture_view_raw.copy(), dim, 1, cv2.INTER_AREA)
+                # black out rounded corners
+                black = rgba_to_bgra((0, 0, 0, 255))
+
+                cv2.rectangle(
+                    self.capture_view_resized,
+                    (0, dim[1] - BLACKOUT_SIDE_LENGTH),
+                    (BLACKOUT_SIDE_LENGTH, dim[1]),
+                    black,
+                    -1,
+                )
+                cv2.rectangle(
+                    self.capture_view_resized,
+                    (dim[0] - BLACKOUT_SIDE_LENGTH, dim[1] - BLACKOUT_SIDE_LENGTH),
+                    (dim[0], dim[1]),
+                    black,
+                    -1,
+                )
 
                 self.capture_view_resized_normalized = normalize_brightness_histogram(
-                    self.capture_view_resized
+                    self.capture_view_resized.copy()
                 )
 
                 capture_view_to_use = self.get_capture_view_by_name(
@@ -432,7 +451,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                     bsd_area = self.settings_dict["black_screen_detection_region"]
 
                     self.capture_view_resized_cropped = crop_image(
-                        self.capture_view_resized,
+                        self.capture_view_resized.copy(),
                         bsd_area["x"],
                         bsd_area["y"],
                         bsd_area["x"] + bsd_area["width"],
@@ -605,6 +624,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.load_time_removed_ms = 0
         self.screenshot_counter = 0
         self.previous_loads_list.clear()
+        self.after_load_time_removed_changed_signal.emit()
 
     def __reset_load_data_and_begin_tracking(self):
         self.__reset_load_data()
@@ -641,6 +661,8 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                     lambda: export_tracked_loads(self.load_removal_session),
                     None,
                 )
+        else:
+            self.__end_tracking()
 
     def __end_tracking(self):
         self.__reset_tracking_variables()

@@ -1178,7 +1178,7 @@
     <widget class="QFrame" name="luminance_entropy_frame">
      <property name="geometry">
       <rect>
-       <x>500</x>
+       <x>502</x>
        <y>90</y>
        <width>141</width>
        <height>80</height>

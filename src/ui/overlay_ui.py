@@ -98,6 +98,8 @@ class __OverlayWidget(QtWidgets.QWidget, overlay_ui.Ui_OverlayWidget):
                 create_icon(self.teleportal_tracking_icon, self._zdcurtain_ref.loading_icon)
             case "egg":
                 create_icon(self.egg_tracking_icon, self._zdcurtain_ref.loading_icon)
+            case "spinner":
+                create_icon(self.black_screen_load_icon, self._zdcurtain_ref.loading_icon)
             case _:
                 self.__bind_icons()
 

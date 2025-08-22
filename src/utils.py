@@ -316,6 +316,16 @@ def create_yes_no_dialog(
         no_method()
 
 
+def rgba_to_bgra(rgba):
+    r, g, b, a = rgba
+    return (b, g, r, a)
+
+
+def bgr_to_rgb(bgra):
+    b, g, r, a = bgra
+    return (r, g, b, a)
+
+
 def to_whole_css_rgb(rgb):
     r, g, b = rgb
     return f"rgb({round(r)},{round(g)},{round(b)})"  # needs to adhere to CSS 2.1
@@ -362,6 +372,8 @@ BGRA_CHANNEL_COUNT = 4
 """How many channels in a BGRA image"""
 INVALID_COLOR = (-1, -1, -1)
 """NoneType is not serializable in tomli-w"""
+BLACKOUT_SIDE_LENGTH = 8
+"""Length of the bottom corner blackout squares"""
 
 # Environment specifics
 WINDOWS_BUILD_NUMBER = int(version().split(".")[-1]) if sys.platform == "win32" else -1
