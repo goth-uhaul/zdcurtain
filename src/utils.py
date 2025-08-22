@@ -6,6 +6,7 @@ import sys
 import tomllib
 from collections.abc import Callable, Iterable, Sequence
 from datetime import datetime
+from math import sqrt
 from pathlib import Path
 from platform import version
 from threading import Thread
@@ -318,6 +319,17 @@ def create_yes_no_dialog(
 def to_whole_css_rgb(rgb):
     r, g, b = rgb
     return f"rgb({round(r)},{round(g)},{round(b)})"  # needs to adhere to CSS 2.1
+
+
+def use_black_or_white_text(rgb):
+    cutoff = 132  # values between 128 and 145 will work
+    return (0, 0, 0) if weighted_distance_in_3d(rgb) > cutoff else (255, 255, 255)
+
+
+def weighted_distance_in_3d(rgb):
+    """W3C-compliant formula to determine whether to use black or white text on a solid color background."""
+    r, g, b = rgb
+    return sqrt(pow(r, 2) * 0.241 + pow(g, 2) * 0.691 + pow(b, 2) * 0.068)
 
 
 def check_if_image_has_transparency(image: MatLike):

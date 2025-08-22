@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, override
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtTest import QTest
+from pywinctl import getTopWindowAt
 
 import error_messages
 from capture_method import Region
@@ -16,6 +17,14 @@ if sys.platform == "win32":
 
 if TYPE_CHECKING:
     from ui.zdcurtain_ui import ZDCurtain
+
+
+def get_top_window_at(x: int, y: int):
+    """Give QWidget time to disappear to avoid Xlib.error.BadDrawable on Linux."""
+    if sys.platform == "linux":
+        # Tested in increments of 10ms on my Pop!_OS 22.04 VM
+        QTest.qWait(80)
+    return getTopWindowAt(x, y)
 
 
 def select_window(zdcurtain: "ZDCurtain"):

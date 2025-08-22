@@ -20,8 +20,9 @@ $arguments = @(
   "--add-data=$ProjectRoot/pyproject.toml$([System.IO.Path]::PathSeparator).",
   "--add-data=$ProjectRoot/res/comparison/*.png:res/comparison/",
   "--add-data=$ProjectRoot/res/icons/*.png:res/icons/",
+  "--add-data=$ProjectRoot/res/*.ico:res/",
   "--upx-dir=$PSScriptRoot/.upx"
-  "--icon=$ProjectRoot/icon.ico")
+  "--icon=$ProjectRoot/res/icon.ico")
 if ($SupportsSplashScreen) {
   # https://github.com/pyinstaller/pyinstaller/issues/9022
   # $arguments += @("--splash=$ProjectRoot/res/splash.png")

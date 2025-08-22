@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 
 
 class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
+    __stream_overlay_text_color: tuple = ("Automatic", "Black", "White")
+
     def __init__(self, zdcurtain: "ZDCurtain"):
         super().__init__()
         self.__video_capture_devices: list[CameraInfo] = []
@@ -167,9 +169,13 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         self.start_tracking_automatically_checkbox.setChecked(
             self._zdcurtain_ref.settings_dict["start_tracking_automatically"]
         )
-
         self.clear_previous_session_on_begin_tracking_checkbox.setChecked(
             self._zdcurtain_ref.settings_dict["clear_previous_session_on_begin_tracking"]
+        )
+        self.stream_overlay_text_color_combobox.setCurrentIndex(
+            self.__stream_overlay_text_color.index(
+                self._zdcurtain_ref.settings_dict["stream_overlay_text_color"]
+            )
         )
         # endregion
 
@@ -228,6 +234,15 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 "similarity_threshold_end_screen", self.end_screen_similarity_spinbox.value()
             )
         )
+
+        # stream overlay settings
+        self.stream_overlay_text_color_combobox.currentIndexChanged.connect(
+            lambda: self.__set_value(
+                "stream_overlay_text_color", self.stream_overlay_text_color_combobox.currentText()
+            )
+        )
+
+        # other settings
         self.start_tracking_automatically_checkbox.stateChanged.connect(
             lambda: self.__set_value(
                 "start_tracking_automatically",
@@ -288,6 +303,7 @@ def get_default_settings_from_ui():
         "capture_device_name": "",
         "captured_window_title": "",
         "take_screenshot_hotkey": default_settings_dialog.take_screenshot_input.text(),
+        "stream_overlay_text_color": default_settings_dialog.stream_overlay_text_color_combobox.currentText(),
         "start_tracking_automatically": default_settings_dialog.start_tracking_automatically_checkbox.isChecked(),  # noqa: E501
         "clear_previous_session_on_begin_tracking": default_settings_dialog.clear_previous_session_on_begin_tracking_checkbox.isChecked(),  # noqa: E501
         "hide_analysis_elements": DEFAULT_PROFILE["hide_analysis_elements"],
@@ -450,4 +466,16 @@ def build_documentation(self):
     self.clear_previous_session_on_begin_tracking_checkbox.setToolTip(
         clear_previous_session_on_begin_tracking_tooltip
     )
+
+    stream_overlay_text_color_tooltip = (
+        '"Automatic" changes the text color to either black or white\n'
+        + "depending on the background color of the stream overlay window.\n"
+        + "If you are using the background as a color key, you should set\n"
+        + "this color manually based on the background color of where you\n"
+        + "place the stream overlay capture output in your streaming software."
+    )
+
+    self.stream_overlay_text_color_label.setToolTip(stream_overlay_text_color_tooltip)
+    self.stream_overlay_text_color_combobox.setToolTip(stream_overlay_text_color_tooltip)
+
     # endregion

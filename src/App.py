@@ -26,7 +26,7 @@ from PySide6.QtWidgets import QApplication
 
 import error_messages
 from ui.zdcurtain_ui import ZDCurtain
-from utils import FROZEN, list_processes
+from utils import FROZEN, list_processes, resource_path
 
 
 def main():
@@ -39,7 +39,7 @@ def main():
         logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
         logging.getLogger("asyncio").setLevel(logging.WARNING)
 
-        app.setWindowIcon(QtGui.QIcon("../icon.ico"))
+        app.setWindowIcon(QtGui.QIcon(resource_path("res/icon.ico")))
 
         if is_already_open():
             error_messages.already_open()

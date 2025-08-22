@@ -26,6 +26,7 @@ class UserProfileDict(TypedDict):
     capture_device_name: str
     captured_window_title: str
     take_screenshot_hotkey: str
+    stream_overlay_text_color: str
     start_tracking_automatically: bool
     clear_previous_session_on_begin_tracking: bool
     hide_analysis_elements: bool
@@ -74,6 +75,7 @@ DEFAULT_PROFILE = UserProfileDict(
     capture_device_name="",
     captured_window_title="",
     take_screenshot_hotkey="",
+    stream_overlay_text_color="Automatic",
     start_tracking_automatically=True,
     clear_previous_session_on_begin_tracking=True,
     hide_analysis_elements=False,

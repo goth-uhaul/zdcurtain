@@ -4,7 +4,7 @@ from gen import overlay as overlay_ui
 from PySide6 import QtCore, QtWidgets
 from vcolorpicker import ColorPicker
 
-from utils import INVALID_COLOR, create_icon, to_whole_css_rgb
+from utils import INVALID_COLOR, create_icon, to_whole_css_rgb, use_black_or_white_text
 
 if TYPE_CHECKING:
     from ui.zdcurtain_ui import ZDCurtain
@@ -21,8 +21,12 @@ class __OverlayWidget(QtWidgets.QWidget, overlay_ui.Ui_OverlayWidget):
         self.__bind_icons()
         self.__change_icon()
         self.__set_initial_color()
+        self._zdcurtain_ref.update_load_time_removed(self.loads_removed_time_label)
 
         self._zdcurtain_ref.after_changing_icon_signal.connect(self.__change_icon)
+        self._zdcurtain_ref.after_load_time_removed_changed_signal.connect(
+            lambda: self._zdcurtain_ref.update_load_time_removed(self.loads_removed_time_label)
+        )
 
         self.show()
 
@@ -45,11 +49,29 @@ class __OverlayWidget(QtWidgets.QWidget, overlay_ui.Ui_OverlayWidget):
         else:
             initial_color = tuple(self._zdcurtain_ref.settings_dict["overlay_color_key_rgb"])
 
+        self.__set_text_color(initial_color)
+
         self.__set_window_color(initial_color)
 
     def __set_window_color(self, color):
         r, g, b = color
-        self.setStyleSheet("#OverlayWidget { background-color: " + to_whole_css_rgb((r, g, b)) + "}")
+        self.setStyleSheet("#OverlayWidget { background-color: " + to_whole_css_rgb((r, g, b)) + "; }")
+
+    def __set_text_color(self, color):
+        text_color: tuple
+
+        match self._zdcurtain_ref.settings_dict["stream_overlay_text_color"]:
+            case "Automatic":
+                text_color = use_black_or_white_text(color)
+            case "Black":
+                text_color = (0, 0, 0)
+            case "White":
+                text_color = (255, 255, 255)
+            case _:
+                text_color = (0, 255, 0)
+
+        r, g, b = text_color
+        self.loads_removed_time_label.setStyleSheet("color: " + to_whole_css_rgb((r, g, b)) + ";")
 
     @override
     def mousePressEvent(self, event):
@@ -62,6 +84,7 @@ class __OverlayWidget(QtWidgets.QWidget, overlay_ui.Ui_OverlayWidget):
 
         self._zdcurtain_ref.settings_dict["overlay_color_key_rgb"] = color
         self.__set_window_color(color)
+        self.__set_text_color(color)
 
     def __change_icon(self):
         match self._zdcurtain_ref.active_load_type:

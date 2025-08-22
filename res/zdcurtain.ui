@@ -1349,33 +1349,6 @@
          <property name="bottomMargin">
           <number>0</number>
          </property>
-         <item>
-          <widget class="QFrame" name="entropy_frame">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
-           </layout>
-          </widget>
-         </item>
          <item alignment="Qt::AlignmentFlag::AlignRight">
           <widget class="QProgressBar" name="entropy_bar">
            <property name="sizePolicy">
@@ -1387,24 +1360,79 @@
            <property name="minimumSize">
             <size>
              <width>106</width>
-             <height>12</height>
+             <height>8</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>120</width>
-             <height>12</height>
+             <height>8</height>
             </size>
            </property>
            <property name="styleSheet">
             <string notr="true">    QProgressBar {
         border: 1px solid #000000;
+        border-bottom: 0px;
+		border-top-left-radius: 3px;
         text-align: center;
         background-color: #131313;
         color: white;
     }
     QProgressBar::chunk {
         background-color: #ff2789;
+    }</string>
+           </property>
+           <property name="value">
+            <number>24</number>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+           <property name="textVisible">
+            <bool>false</bool>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="invertedAppearance">
+            <bool>true</bool>
+           </property>
+           <property name="textDirection">
+            <enum>QProgressBar::Direction::TopToBottom</enum>
+           </property>
+          </widget>
+         </item>
+         <item alignment="Qt::AlignmentFlag::AlignRight">
+          <widget class="QProgressBar" name="entropy_bar_slice">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>106</width>
+             <height>8</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>120</width>
+             <height>8</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">    QProgressBar {
+        border: 1px solid #000000;
+		border-top: 0px;
+		border-bottom-left-radius: 3px;
+        text-align: center;
+        background-color: #131313;
+        color: white;
+    }
+    QProgressBar::chunk {
+        background-color: #cc1f6d;
     }</string>
            </property>
            <property name="value">
@@ -2371,11 +2399,11 @@ Removal Session</string>
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="action_settings"/>
-    <addaction name="separator"/>
     <addaction name="action_load_settings"/>
     <addaction name="action_save_settings"/>
     <addaction name="action_save_settings_as"/>
+    <addaction name="separator"/>
+    <addaction name="action_export_tracked_loads"/>
     <addaction name="separator"/>
     <addaction name="action_exit"/>
    </widget>
@@ -2397,19 +2425,29 @@ Removal Session</string>
      <addaction name="action_capture_normalized"/>
     </widget>
     <addaction name="menuCapture"/>
+    <addaction name="separator"/>
     <addaction name="action_hide_analysis_elements"/>
     <addaction name="action_show_frame_info"/>
-    <addaction name="action_show_stream_overlay"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
-     <string>Tools</string>
+     <string>Tracking</string>
     </property>
-    <addaction name="action_export_tracked_loads"/>
+    <addaction name="action_reset_statistics"/>
+    <addaction name="action_clear_load_removal_session"/>
+    <addaction name="separator"/>
+    <addaction name="action_settings"/>
+   </widget>
+   <widget class="QMenu" name="menuWindow">
+    <property name="title">
+     <string>Window</string>
+    </property>
+    <addaction name="action_show_stream_overlay"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTools"/>
    <addaction name="menuView"/>
+   <addaction name="menuWindow"/>
    <addaction name="menuAbout"/>
   </widget>
   <action name="action_settings">
@@ -2468,7 +2506,7 @@ Removal Session</string>
   </action>
   <action name="action_export_tracked_loads">
    <property name="text">
-    <string>Export Tracked Loads...</string>
+    <string>Export Load Removal Session...</string>
    </property>
   </action>
   <action name="action_show_frame_info">
@@ -2482,6 +2520,16 @@ Removal Session</string>
   <action name="action_show_stream_overlay">
    <property name="text">
     <string>Show Stream Overlay</string>
+   </property>
+  </action>
+  <action name="action_reset_statistics">
+   <property name="text">
+    <string>Reset Statistics</string>
+   </property>
+  </action>
+  <action name="action_clear_load_removal_session">
+   <property name="text">
+    <string>Clear Load Removal Session</string>
    </property>
   </action>
  </widget>

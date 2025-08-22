@@ -43,6 +43,7 @@ def end_tracking_load(_zdcurtain_ref: "ZDCurtain", *, due_to_error=True):
     _zdcurtain_ref.confirmed_load_detected_at_timestamp = 0
     _zdcurtain_ref.reset_icons()
     _zdcurtain_ref.after_changing_icon_signal.emit()
+    _zdcurtain_ref.after_load_time_removed_changed_signal.emit()
     _zdcurtain_ref.is_load_being_removed = False
 
     if due_to_error:

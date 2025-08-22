@@ -87,6 +87,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     after_setting_hotkey_signal = QtCore.Signal()
     after_changing_icon_signal = QtCore.Signal()
     after_load_list_changed_signal = QtCore.Signal()
+    after_load_time_removed_changed_signal = QtCore.Signal()
     # hotkey signals
     take_screenshot_signal = QtCore.Signal()
     # Use this signal when trying to show an error from outside the main thread
@@ -144,6 +145,11 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.end_screen_tracking_value_line.setHidden(True)
         self.end_screen_tracking_icon.setHidden(True)
         self.end_screen_threshold_value_line.setHidden(True)
+
+        if self.settings_dict["start_tracking_automatically"]:
+            self.begin_tracking()
+        else:
+            self.end_tracking()
 
         self.__setup_bindings()
 
@@ -279,28 +285,39 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
     def __setup_bindings(self):
         # connecting menu actions
-        self.action_settings.triggered.connect(lambda: open_settings(self))
+        # file
+
         self.action_save_settings.triggered.connect(lambda: save_settings(self))
         self.action_save_settings_as.triggered.connect(lambda: save_settings_as(self))
         self.action_load_settings.triggered.connect(lambda: load_settings(self))
+        self.action_export_tracked_loads.triggered.connect(
+            lambda: export_tracked_loads(self.load_removal_session)
+        )
+        self.action_exit.triggered.connect(self.closeEvent)
+
+        # Tracking
+        self.action_reset_statistics.triggered.connect(self.on_reset_statistics_button_press)
+        self.action_clear_load_removal_session.triggered.connect(
+            self.on_clear_load_removal_session_button_press
+        )
+        self.action_settings.triggered.connect(lambda: open_settings(self))
+        # View
+        self.action_hide_analysis_elements.changed.connect(
+            lambda: self.set_analysis_elements_hidden(self.action_hide_analysis_elements.isChecked())
+        )
         self.action_capture_standard.triggered.connect(
             lambda: self.set_capture_type_for_screenshots("standard_resized")
         )
         self.action_capture_normalized.triggered.connect(
             lambda: self.set_capture_type_for_screenshots("normalized_resized")
         )
-        self.action_hide_analysis_elements.changed.connect(
-            lambda: self.set_analysis_elements_hidden(self.action_hide_analysis_elements.isChecked())
-        )
         self.action_show_frame_info.changed.connect(
             lambda: self.set_frame_info_hidden(not self.action_show_frame_info.isChecked())
         )
+        # Window
         self.action_show_stream_overlay.triggered.connect(lambda: open_overlay(self))
-        self.action_export_tracked_loads.triggered.connect(
-            lambda: export_tracked_loads(self.load_removal_session)
-        )
+        # Help
         self.action_about.triggered.connect(lambda: open_about(self))
-        self.action_exit.triggered.connect(lambda: self.closeEvent())  # noqa: PLW0108
 
         # connecting button clicks to functions
         self.select_window_button.clicked.connect(self.__select_window_and_start_tracking)
@@ -316,6 +333,9 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.after_setting_hotkey_signal.connect(lambda: after_setting_hotkey(self))
         self.capture_state_changed_signal.connect(self.on_capture_state_changed)
         self.after_load_list_changed_signal.connect(self.refresh_previous_loads_list)
+        self.after_load_time_removed_changed_signal.connect(
+            lambda: self.update_load_time_removed(self.total_load_time_removed_label)
+        )
 
         self.timer_main.timeout.connect(self.__run_app_logic)
         self.timer_frame_analysis.timeout.connect(
@@ -459,10 +479,6 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             + f"{self.slice_shannon_entropy_min:.2f}"
         )
 
-        tltr_m, tltr_s, tltr_ms = ms_to_msms(self.load_time_removed_ms)
-
-        self.total_load_time_removed_label.setText(f"{tltr_m:.0f}m {tltr_s:.0f}s {tltr_ms:.0f}ms")
-
     def on_tracking_button_press(self):
         if self.is_tracking:
             self.end_tracking()
@@ -484,6 +500,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     def reset_all_variables(self):
         self.__reset_tracking_variables()
         self.__reset_load_data()
+        self.__bind_icons()
 
     def __reset_tracking_variables(self):
         # load classification and measurement
@@ -601,21 +618,38 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         if not self.is_tracking:  # we're not tracking, no need to run this
             return
 
-        self.__reset_tracking_variables()
-        self.is_tracking = False
-        self.begin_end_tracking_button.setText("Begin Tracking")
-
         if (
             self.load_removal_session is not None
             and self.load_removal_session.get_load_count() > 0
             and not ending_due_to_error
         ):
-            create_yes_no_dialog(
-                "Export Load Removal Session",
-                "Would you like to export the results of your load removal session to a file?",
-                lambda: export_tracked_loads(self.load_removal_session),
-                None,
-            )
+            if self.is_load_being_removed:
+                create_yes_no_dialog(
+                    "Warning",
+                    "Ending tracking during a load can have adverse effects. "
+                    + "Are you sure you want to do this?",
+                    self.__end_tracking(),
+                    None,
+                )
+            else:
+                self.__end_tracking()
+
+            if not self.is_tracking:
+                create_yes_no_dialog(
+                    "Export Load Removal Session",
+                    "Would you like to export the results of your load removal session to a file?",
+                    lambda: export_tracked_loads(self.load_removal_session),
+                    None,
+                )
+
+    def __end_tracking(self):
+        self.__reset_tracking_variables()
+        self.is_tracking = False
+        self.begin_end_tracking_button.setText("Begin Tracking")
+        self.__bind_icons()
+
+        if self.is_load_being_removed:
+            mark_load_as_lost(self)
 
     def __update_ui(self):
         self.__update_capture_region_label()
@@ -673,13 +707,13 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         return capture_view_to_use
 
     def set_middle_of_load_dependencies_enabled(self, *, should_be_enabled: bool):
-        self.begin_end_tracking_button.setEnabled(should_be_enabled)
         self.clear_load_removal_session_button.setEnabled(should_be_enabled)
+        self.action_clear_load_removal_session.setEnabled(should_be_enabled)
         self.action_export_tracked_loads.setEnabled(should_be_enabled)
 
     def set_active_capture_dependencies_enabled(self, *, should_be_enabled: bool):
         self.reset_statistics_button.setEnabled(should_be_enabled)
-        self.begin_end_tracking_button.setEnabled(should_be_enabled)
+        self.action_clear_load_removal_session.setEnabled(should_be_enabled)
         self.clear_load_removal_session_button.setEnabled(should_be_enabled)
 
     def on_capture_state_changed(self):
@@ -694,6 +728,14 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
         self.attempt_to_recover_capture_if_lost = True
         self.set_active_capture_dependencies_enabled(should_be_enabled=True)
+
+    def update_load_time_removed(self, label):
+        tltr_m, tltr_s, tltr_ms = ms_to_msms(self.load_time_removed_ms)
+
+        if tltr_m > 0 or tltr_s > 0 or tltr_ms > 0:
+            label.setText(f"{tltr_m:.0f}m {tltr_s:.0f}s {tltr_ms:.0f}ms")
+        else:
+            label.setText("--m --s ---ms")
 
     def refresh_previous_loads_list(self):
         if self.load_removal_session is not None:
@@ -743,6 +785,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
         # progress bars
         self.entropy_bar.setValue(int(self.full_shannon_entropy))
+        self.entropy_bar_slice.setValue(int(self.slice_shannon_entropy))
         self.elevator_tracking_bar.setValue(int(self.similarity_to_elevator))
         self.tram_tracking_bar.setValue(int(self.similarity_to_tram))
         self.teleportal_tracking_bar.setValue(int(self.similarity_to_teleportal))

@@ -1,6 +1,6 @@
 [project]
 name = "zdcurtain"
-version = "0.3.2"
+version = "0.3.4"
 description = "Load time remover for Metroid Dread"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -35,11 +35,10 @@ dev = [
     "winrt-windows-graphics-directx-direct3d11>=3.2.1",
     "winrt-windows-graphics-directx-direct3d11-interop>=3.2.1",
     "winrt-windows-graphics-imaging>=3.2.1",
-
 ]
 
 [tool.pyside6-project]
-files = ["res/about.ui", "res/overlay.ui", "res/settings.ui", "res/zdcurtain.ui"]
+files = ["res/about.ui", "res/overlay.ui", "res/settings.ui", "res/zdcurtain.ui", "resources.qrc"]
 
 [tool.uv]
 find-links = ["res/wheels"]
