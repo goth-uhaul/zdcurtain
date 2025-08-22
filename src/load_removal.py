@@ -505,7 +505,8 @@ def __check_if_load_ending(_zdcurtain_ref: "ZDCurtain"):
     if (
         black_screen_over_detection_timestamp > _zdcurtain_ref.confirmed_load_detected_at_timestamp
         and _zdcurtain_ref.is_load_being_removed
-        and not _zdcurtain_ref.should_block_load_detection
+        # we don't check for load blocking here because we want a load removal
+        # to conclude gracefully even if future loads need to be blocked
     ):
         if _zdcurtain_ref.active_load_type not in {"none", "black"}:  # noqa: SIM102 need _zdcurtain_ref.active_load_type
             if (
