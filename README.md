@@ -67,6 +67,7 @@ Upon loading ZDCurtain, you will be presented with the main capture analysis das
 1. How dark the Capture Analysis Window currently is.
 2. The average grayscale color of the Capture Analysis Window. The color of all pixels are averaged to determine this value.
 3. The entropy, or color uniformity level of the Capture Analysis Window. The closer the screen is to a solid color, the lower these values are. The top bar is the "full" entropy, which represents the entire screen's color uniformity. The bottom bar is the "slice" entropy, which represents only the color uniformity of the area marked by the "Black Screen Detection Area" box in the Capture Analysis Window.
+4. The loading icon. This turns from gray to gold during black screen loads and "spinner" loads.
 
 ## Your First Load Tracking Session
 
