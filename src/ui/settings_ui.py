@@ -123,9 +123,17 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         else:
             self.capture_device_combobox.setPlaceholderText("No device found.")
 
-    def __on_screenshot_location_folder_button_pressed(self, _zdcurtain_ref: "ZDCurtain"):
+    def __on_screenshot_location_folder_button_pressed(self):
         set_screenshot_location(self._zdcurtain_ref)
-        self.locations_screenshot_folder_input.setText(_zdcurtain_ref.settings_dict["screenshot_directory"])
+        self.locations_screenshot_folder_input.setText(
+            self._zdcurtain_ref.settings_dict["screenshot_directory"]
+        )
+
+    def __on_blink_when_tracking_disabled_checkbox_changed(self):
+        self.__set_value(
+            "blink_when_tracking_disabled", self.blink_when_tracking_disabled_checkbox.isChecked()
+        )
+        self._zdcurtain_ref.after_changing_tracking_status.emit()
 
     def __setup_bindings(self):
         # Hotkey initial values and bindings
@@ -176,6 +184,10 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
             self.__stream_overlay_text_color.index(
                 self._zdcurtain_ref.settings_dict["stream_overlay_text_color"]
             )
+        )
+        # Overlay Settings
+        self.blink_when_tracking_disabled_checkbox.setChecked(
+            self._zdcurtain_ref.settings_dict["blink_when_tracking_disabled"]
         )
         # endregion
 
@@ -241,6 +253,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 "stream_overlay_text_color", self.stream_overlay_text_color_combobox.currentText()
             )
         )
+        self.blink_when_tracking_disabled_checkbox.stateChanged.connect(
+            self.__on_blink_when_tracking_disabled_checkbox_changed
+        )
 
         # other settings
         self.start_tracking_automatically_checkbox.stateChanged.connect(
@@ -268,7 +283,7 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
             self._zdcurtain_ref.settings_dict["screenshot_directory"]
         )
         self.locations_screenshot_folder_button.clicked.connect(
-            lambda: self.__on_screenshot_location_folder_button_pressed(self._zdcurtain_ref)
+            self.__on_screenshot_location_folder_button_pressed
         )
 
         # endregion
@@ -306,6 +321,7 @@ def get_default_settings_from_ui():
         "stream_overlay_text_color": default_settings_dialog.stream_overlay_text_color_combobox.currentText(),
         "start_tracking_automatically": default_settings_dialog.start_tracking_automatically_checkbox.isChecked(),  # noqa: E501
         "clear_previous_session_on_begin_tracking": default_settings_dialog.clear_previous_session_on_begin_tracking_checkbox.isChecked(),  # noqa: E501
+        "blink_when_tracking_disabled": default_settings_dialog.blink_when_tracking_disabled_checkbox.isChecked(),
         "hide_analysis_elements": DEFAULT_PROFILE["hide_analysis_elements"],
         "hide_frame_info": DEFAULT_PROFILE["hide_frame_info"],
         "overlay_color_key_rgb": DEFAULT_PROFILE["overlay_color_key_rgb"],
@@ -380,8 +396,9 @@ def build_documentation(self):
         "Uniformity tolerance for black screen loads. The lower the value,\n"
         + "the closer the screen needs to be to the same color for ZDCurtain\n"
         + "to recognize the load.\n\n"
-        + "Set this value low to keep white screens from being recognized\n"
-        + "as loads."
+        + "Set this value low to keep dark non-uniform environments, such as\n"
+        + "dimly lit rooms and elevators, from being recognized as black\n"
+        + "screen loads."
     )
 
     self.black_screen_entropy_threshold_label.setToolTip(black_entropy_threshold_tooltip)
@@ -477,5 +494,14 @@ def build_documentation(self):
 
     self.stream_overlay_text_color_label.setToolTip(stream_overlay_text_color_tooltip)
     self.stream_overlay_text_color_combobox.setToolTip(stream_overlay_text_color_tooltip)
+
+    blink_when_tracking_disabled_tooltip = (
+        "If this box is checked, the ZDCurtain stream overlay will blink\n"
+        + "when there is no active load removal session. This is useful\n"
+        + "as a visual aid to know at a glance whether loads are being tracked."
+    )
+
+    self.blink_when_tracking_disabled_checkbox.setToolTip(blink_when_tracking_disabled_tooltip)
+    self.blink_when_tracking_disabled_checkbox.setToolTip(blink_when_tracking_disabled_tooltip)
 
     # endregion

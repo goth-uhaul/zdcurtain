@@ -1,3 +1,4 @@
+import csv
 import datetime
 import json
 
@@ -23,6 +24,8 @@ class LoadRemovalSession:
                     f"{filename}",
                     sheet_name="Removed Loads",
                 )
+            case "csv":
+                self.__write_to_csv(f"{filename}")
             case _:
                 raise KeyError(f"{data_format!r} is not a valid export format")
 
@@ -77,6 +80,33 @@ class LoadRemovalSession:
 
             if load_to_delete_index is not None:
                 del self.__loads[load_to_delete_index]
+
+    def __write_to_csv(self, filepath):
+        field_names = [
+            "loadTimeRemoved",
+            "loadType",
+            "wasLoadLost",
+            "wasLoadDiscarded",
+            "discardType",
+            "eventDateTime_date",
+            "eventDateTime_timestamp",
+            "eventDateTime_timezone",
+        ]
+
+        session_dict = self.to_dict()
+        loads = session_dict.get("loads")
+
+        loads_as_dict = []
+
+        if loads is not None:
+            for load in loads:
+                flattened_dict = flatten_dict(load)
+                loads_as_dict.append(flattened_dict)
+
+        with open(filepath, "w", newline="", encoding="utf8") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=field_names)
+            writer.writeheader()
+            writer.writerows(loads_as_dict)
 
     def __write_to_excel(self, filepath, sheet_name):
         workbook = Workbook(write_only=True)
@@ -226,7 +256,7 @@ class LoadRemovalSessionInfo:
 def export_tracked_loads(load_removal_session):
     filename = sanitize_filename(f"load-removal-session_{load_removal_session.sessionInfo.startedAt.date}")
     selected_file_path, selected_filter = QFileDialog.getSaveFileName(
-        filter="JSON (*.json);;Excel Document (*.xlsx)", dir=filename
+        filter="JSON (*.json);;Excel Document (*.xlsx);;CSV UTF-8 (comma delimited) (*.csv)", dir=filename
     )
 
     data_format = None
@@ -236,6 +266,8 @@ def export_tracked_loads(load_removal_session):
             data_format = "json"
         case "Excel Document (*.xlsx)":
             data_format = "excel"
+        case "CSV UTF-8 (comma delimited) (*.csv)":
+            data_format = "csv"
 
     if selected_file_path:
         load_removal_session.export_loads(data_format, selected_file_path)

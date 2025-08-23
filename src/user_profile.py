@@ -29,6 +29,7 @@ class UserProfileDict(TypedDict):
     stream_overlay_text_color: str
     start_tracking_automatically: bool
     clear_previous_session_on_begin_tracking: bool
+    blink_when_tracking_disabled: bool
     hide_analysis_elements: bool
     hide_frame_info: bool
     overlay_color_key_rgb: tuple
@@ -78,6 +79,7 @@ DEFAULT_PROFILE = UserProfileDict(
     stream_overlay_text_color="Automatic",
     start_tracking_automatically=True,
     clear_previous_session_on_begin_tracking=True,
+    blink_when_tracking_disabled=True,
     hide_analysis_elements=False,
     hide_frame_info=False,
     overlay_color_key_rgb=INVALID_COLOR,

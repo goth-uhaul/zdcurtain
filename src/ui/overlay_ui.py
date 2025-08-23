@@ -47,16 +47,23 @@ class __OverlayWidget(QtWidgets.QWidget, overlay_ui.Ui_OverlayWidget):
         create_icon(self.egg_tracking_icon, self._zdcurtain_ref.capsule_icon)
 
     def __blink_overlay(self):
+        if not self._zdcurtain_ref.settings_dict["blink_when_tracking_disabled"]:
+            self.__set_elements_visible(elements_visible=True)
+            return
+
         blink = self.overlay_blink
         solid_all = self._zdcurtain_ref.is_tracking
 
-        self.elevator_tracking_icon.setVisible(solid_all or blink)
-        self.tram_tracking_icon.setVisible(solid_all or blink)
-        self.teleportal_tracking_icon.setVisible(solid_all or blink)
-        self.egg_tracking_icon.setVisible(solid_all or blink)
-        self.black_screen_load_icon.setVisible(solid_all or blink)
+        self.__set_elements_visible(elements_visible=solid_all or blink)
 
         self.overlay_blink = not self.overlay_blink
+
+    def __set_elements_visible(self, *, elements_visible):
+        self.elevator_tracking_icon.setVisible(elements_visible)
+        self.tram_tracking_icon.setVisible(elements_visible)
+        self.teleportal_tracking_icon.setVisible(elements_visible)
+        self.egg_tracking_icon.setVisible(elements_visible)
+        self.black_screen_load_icon.setVisible(elements_visible)
 
     def __set_initial_color(self):
         initial_color: tuple
