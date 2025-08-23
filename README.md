@@ -77,7 +77,7 @@ At this point, you can start playing the game. Watch the similarity bars and the
 
 - When first capturing, put your Switch to sleep so that only a black screen is visible. In the frame info overlay, note the line "Minimum Entropy (full, slice)". Set your "Black Screen Entropy Threshold" slightly above both of these values.
 - If black screens aren't being detected, increase the "Black Screen Threshold" in Settings. If that doesn't work, increase the "Black Screen Entropy Threshold".
-- If dimly lit rooms are detecting false black screen loads, decrease the "Black Screen Entropy Threshold" to see if this eliminates the false positive. If it doesn't, decrease the "Black Screen Threshold" until the false positive is eliminated.
+- If dimly lit rooms are causing false black screen loads to be detected, decrease the "Black Screen Entropy Threshold" to see if this eliminates the false positive. If it doesn't, decrease the "Black Screen Threshold" until the false positive is eliminated.
 - If you are in a video load screen (either elevator, tram, teleportal, or Itorash capsule) and the maximum is less than your threshold for that type of load, lower your threshold to a couple of percentage points below the maximum that was detected.
 
 Once your setup is properly calibrated, you should be good to go! At this point, you can open up the Stream Overlay and add it to your streaming layout. The Stream Overlay contains both the total Load Time Removed (LRT) throughout the session and loading indicators that you can display in your run to visually ensure that loads are being removed when watching the run later.
