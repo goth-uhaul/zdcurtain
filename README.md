@@ -51,12 +51,16 @@ Upon loading ZDCurtain, you will be presented with the main capture analysis das
 4. Previous Loads: a list of all loads that have been detected, most recent load first.
 5. Quick Actions: this sidebar allows you to take screenshots, control tracking, and clear your session data.
 
+### Similarity Bar
+
 <p align="center"><img src="./docs/zdcurtain-doc-2.png" alt="Example" /></p>
 
 1. The type of load the bar represents.
 2. The current similarity value.
 3. The maximum similarity value for that session.
 4. The threshold needed to detect a load (from Settings).
+
+### Image Analysis Indicators
 
 <p align="center"><img src="./docs/zdcurtain-doc-3.png" alt="Example" /></p>
 
