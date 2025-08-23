@@ -1,11 +1,11 @@
 import datetime
 import json
 
-import pandas as pd
+from openpyxl import Workbook
 from pathvalidate import sanitize_filename
 from PySide6.QtWidgets import QFileDialog
 
-from utils import LocalTime, get_version
+from utils import LocalTime, flatten_dict, get_version
 
 
 class LoadRemovalSession:
@@ -45,6 +45,10 @@ class LoadRemovalSession:
     def get_load_count(self):
         return len(self.__loads)
 
+    def get_major_load_count(self):
+        major_loads = [load for load in self.__loads if load.loadType != "black"]
+        return len(major_loads)
+
     def get_latest_load(self):
         if self.get_load_count() > 0:
             return self.__loads[-1]
@@ -75,8 +79,50 @@ class LoadRemovalSession:
                 del self.__loads[load_to_delete_index]
 
     def __write_to_excel(self, filepath, sheet_name):
-        df = pd.json_normalize(self.to_dict(), ["loads"])
-        return df.to_excel(filepath, sheet_name, index=False)
+        workbook = Workbook(write_only=True)
+        sheet = workbook.create_sheet(sheet_name)
+
+        sheet.column_dimensions["A"].width = 19
+        sheet.column_dimensions["B"].width = 10
+        sheet.column_dimensions["C"].width = 14
+        sheet.column_dimensions["D"].width = 19
+        sheet.column_dimensions["E"].width = 12
+        sheet.column_dimensions["F"].width = 31
+        sheet.column_dimensions["G"].width = 16
+        sheet.column_dimensions["H"].width = 22
+
+        field_names = [
+            "loadTimeRemoved",
+            "loadType",
+            "wasLoadLost",
+            "wasLoadDiscarded",
+            "discardType",
+            "eventDateTime_date",
+            "eventDateTime_timestamp",
+            "eventDateTime_timezone",
+        ]
+
+        sheet.append([
+            "Load Time Removed",
+            "Load Type",
+            "Was Load Lost?",
+            "Was Load Discarded?",
+            "Discard Type",
+            "Event Date",
+            "Event Timestamp",
+            "Event Timezone",
+        ])
+
+        session_dict = self.to_dict()
+        loads = session_dict.get("loads")
+
+        if loads is not None:
+            for load in loads:
+                flattened_dict = flatten_dict(load)
+                values = (flattened_dict[k] for k in field_names)
+                sheet.append(values)
+
+        workbook.save(filepath)
 
     def __write_to_json(self, filepath):
         with open(filepath, "w", encoding="utf-8", newline=None) as f:
@@ -98,9 +144,10 @@ class LostLoadEntry:
         return {
             "loadTimeRemoved": 0,
             "loadType": self.loadType,
-            "loadLostAt": self.loadLostAt.to_dict(),
+            "eventDateTime": self.loadLostAt.to_dict(),
             "wasLoadLost": "yes",
             "wasLoadDiscarded": "no",
+            "discardType": "",
         }
 
     def to_string(self):
@@ -120,7 +167,7 @@ class DiscardedLoadEntry:
         return {
             "loadTimeRemoved": 0,
             "loadType": self.loadType,
-            "loadDiscardedAt": self.loadDiscardedAt.to_dict(),
+            "eventDateTime": self.loadDiscardedAt.to_dict(),
             "wasLoadLost": "no",
             "wasLoadDiscarded": "yes",
             "discardType": self.discardType,
@@ -143,9 +190,10 @@ class LoadRemovalRecordEntry:
         return {
             "loadTimeRemoved": self.loadTimeRemoved,
             "loadType": self.loadType,
-            "loadRemovedAt": self.loadRemovedAt.to_dict(),
+            "eventDateTime": self.loadRemovedAt.to_dict(),
             "wasLoadLost": "no",
             "wasLoadDiscarded": "no",
+            "discardType": "",
         }
 
     def to_string(self):
@@ -170,6 +218,7 @@ class LoadRemovalSessionInfo:
         return {
             "startedAt": self.startedAt.to_dict(),
             "createdWithVersion": self.createdWithVersion,
+            "majorLoadCount": self.loadRemovalSession.get_major_load_count(),
             "loadCount": self.loadRemovalSession.get_load_count(),
         }
 

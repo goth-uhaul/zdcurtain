@@ -3,6 +3,7 @@ import sys
 if sys.platform != "win32":
     raise OSError
 import asyncio
+from math import ceil
 from typing import TYPE_CHECKING, cast, override
 
 import numpy as np
@@ -18,7 +19,7 @@ from winrt.windows.graphics.imaging import BitmapBufferAccessMode, SoftwareBitma
 
 from capture_method.CaptureMethodBase import CaptureMethodBase
 from d3d11 import D3D11_CREATE_DEVICE_FLAG, D3D_DRIVER_TYPE, D3D11CreateDevice
-from utils import BGRA_CHANNEL_COUNT, WGC_MIN_BUILD, WINDOWS_BUILD_NUMBER, is_valid_hwnd
+from utils import BGRA_CHANNEL_COUNT, WGC_MIN_BUILD, WINDOWS_BUILD_NUMBER, get_window_bounds, is_valid_hwnd
 
 if TYPE_CHECKING:
     from ui.zdcurtain_ui import ZDCurtain
@@ -149,6 +150,18 @@ Caps at around 60 FPS."""
         self._zdcurtain_ref.hwnd = hwnd
         try:
             self.reinitialize()
+            # Exlude the borders and titlebar from the window selection. To only get the client area.
+            # TODO: move this into its own function
+            _, __, window_width, window_height = get_window_bounds(hwnd)
+            _, __, client_width, client_height = win32gui.GetClientRect(hwnd)
+            border_width = ceil((window_width - client_width) / 2)
+            titlebar_width_border_height = window_height - client_height - border_width
+
+            self._zdcurtain_ref.settings_dict["capture_region"]["x"] = border_width
+            self._zdcurtain_ref.settings_dict["capture_region"]["y"] = titlebar_width_border_height
+            self._zdcurtain_ref.settings_dict["capture_region"]["width"] = client_width
+            self._zdcurtain_ref.settings_dict["capture_region"]["height"] = client_height - border_width * 2
+
         # Unrecordable hwnd found as the game is crashing
         except OSError as exception:
             if str(exception).endswith("The parameter is incorrect"):

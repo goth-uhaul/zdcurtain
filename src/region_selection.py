@@ -59,18 +59,18 @@ def select_window(zdcurtain: "ZDCurtain"):
         _, __, window_width, window_height = get_window_bounds(hwnd)
         _, __, client_width, client_height = win32gui.GetClientRect(hwnd)
         border_width = ceil((window_width - client_width) / 2)
-        titlebar_with_border_height = window_height - client_height - border_width
+        titlebar_width_border_height = window_height - client_height - border_width
     else:
         data = window._xWin.get_geometry()._data  # pyright:ignore[reportPrivateUsage] # noqa: SLF001
         client_height = data["height"]
         client_width = data["width"]
         border_width = data["border_width"]
-        titlebar_with_border_height = border_width
+        titlebar_width_border_height = border_width
 
     __set_region_values(
         zdcurtain,
         x=border_width,
-        y=titlebar_with_border_height,
+        y=titlebar_width_border_height,
         width=client_width,
         height=client_height - border_width * 2,
     )

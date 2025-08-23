@@ -358,6 +358,18 @@ def check_if_image_has_transparency(image: MatLike):
     return mean != MAXBYTE
 
 
+def flatten_dict(d, parent_key="", sep="_"):
+    """Convert nested dictionary to flat structure."""
+    items = []
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
 DWMWA_EXTENDED_FRAME_BOUNDS = 9
 MAXBYTE = 255
 ONE_SECOND = 1000

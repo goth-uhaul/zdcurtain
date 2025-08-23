@@ -1,13 +1,15 @@
 #!/usr/bin/python3
 from __future__ import annotations
 
+import os
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 # !/usr/bin/python3
 import cv2
 
-from utils import BGR_CHANNEL_COUNT, ImageShape, imread, imwrite, resource_path
+from utils import BGR_CHANNEL_COUNT, FROZEN, ImageShape, imread, imwrite, resource_path
 from ZDImage import ZDImage
 
 if TYPE_CHECKING:
@@ -71,40 +73,53 @@ def load_images(_zdcurtain_ref):
 
 
 def load_comparison_images(_zdcurtain_ref):
-    _zdcurtain_ref.comparison_capsule_gravity = read_and_format_zdimage("res/comparison/capsule_gravity.png")
-    _zdcurtain_ref.comparison_capsule_power = read_and_format_zdimage("res/comparison/capsule_power.png")
-    _zdcurtain_ref.comparison_capsule_varia = read_and_format_zdimage("res/comparison/capsule_varia.png")
+    file_path = Path.cwd() / "comparison" if FROZEN else Path.cwd() / "res" / "comparison"
+    _zdcurtain_ref.comparison_capsule_gravity = read_and_format_zdimage(
+        f"{file_path}{os.sep}capsule_gravity.png"
+    )
+    _zdcurtain_ref.comparison_capsule_power = read_and_format_zdimage(f"{file_path}{os.sep}capsule_power.png")
+    _zdcurtain_ref.comparison_capsule_varia = read_and_format_zdimage(f"{file_path}{os.sep}capsule_varia.png")
     _zdcurtain_ref.comparison_elevator_gravity = read_and_format_zdimage(
-        "res/comparison/elevator_gravity.png"
+        f"{file_path}{os.sep}elevator_gravity.png"
     )
-    _zdcurtain_ref.comparison_elevator_power = read_and_format_zdimage("res/comparison/elevator_power.png")
-    _zdcurtain_ref.comparison_elevator_varia = read_and_format_zdimage("res/comparison/elevator_varia.png")
+    _zdcurtain_ref.comparison_elevator_power = read_and_format_zdimage(
+        f"{file_path}{os.sep}elevator_power.png"
+    )
+    _zdcurtain_ref.comparison_elevator_varia = read_and_format_zdimage(
+        f"{file_path}{os.sep}elevator_varia.png"
+    )
     _zdcurtain_ref.comparison_teleport_gravity = read_and_format_zdimage(
-        "res/comparison/teleport_gravity.png"
+        f"{file_path}{os.sep}teleport_gravity.png"
     )
-    _zdcurtain_ref.comparison_teleport_power = read_and_format_zdimage("res/comparison/teleport_power.png")
-    _zdcurtain_ref.comparison_teleport_varia = read_and_format_zdimage("res/comparison/teleport_varia.png")
+    _zdcurtain_ref.comparison_teleport_power = read_and_format_zdimage(
+        f"{file_path}{os.sep}teleport_power.png"
+    )
+    _zdcurtain_ref.comparison_teleport_varia = read_and_format_zdimage(
+        f"{file_path}{os.sep}teleport_varia.png"
+    )
     _zdcurtain_ref.comparison_train_left_gravity = read_and_format_zdimage(
-        "res/comparison/train_left_gravity.png"
+        f"{file_path}{os.sep}train_left_gravity.png"
     )
     _zdcurtain_ref.comparison_train_left_power = read_and_format_zdimage(
-        "res/comparison/train_left_power.png"
+        f"{file_path}{os.sep}train_left_power.png"
     )
     _zdcurtain_ref.comparison_train_left_varia = read_and_format_zdimage(
-        "res/comparison/train_left_varia.png"
+        f"{file_path}{os.sep}train_left_varia.png"
     )
     _zdcurtain_ref.comparison_train_right_gravity = read_and_format_zdimage(
-        "res/comparison/train_right_gravity.png"
+        f"{file_path}{os.sep}train_right_gravity.png"
     )
     _zdcurtain_ref.comparison_train_right_power = read_and_format_zdimage(
-        "res/comparison/train_right_power.png"
+        f"{file_path}{os.sep}train_right_power.png"
     )
     _zdcurtain_ref.comparison_train_right_varia = read_and_format_zdimage(
-        "res/comparison/train_right_varia.png"
+        f"{file_path}{os.sep}train_right_varia.png"
     )
-    _zdcurtain_ref.comparison_end_screen = read_and_format_zdimage("res/comparison/end_screen.png")
-    _zdcurtain_ref.comparison_game_over_screen = read_and_format_zdimage("res/comparison/game_over_mask.png")
-    _zdcurtain_ref.comparison_loading_widget = read_and_format_zdimage("res/comparison/loading.png")
+    _zdcurtain_ref.comparison_end_screen = read_and_format_zdimage(f"{file_path}{os.sep}end_screen.png")
+    _zdcurtain_ref.comparison_game_over_screen = read_and_format_zdimage(
+        f"{file_path}{os.sep}game_over_mask.png"
+    )
+    _zdcurtain_ref.comparison_loading_widget = read_and_format_zdimage(f"{file_path}{os.sep}loading.png")
 
 
 def read_image(filename):
@@ -119,7 +134,7 @@ def read_image(filename):
 
 
 def read_and_format_zdimage(filename):
-    return ZDImage(resource_path(filename))
+    return ZDImage(filename)
 
 
 def take_screenshot(directory, filename, capture):

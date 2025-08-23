@@ -18,7 +18,6 @@ $arguments = @(
   # Keep this exclusion even if nothing currently installs it, to stay future-proof.
   '--exclude=PIL',
   "--add-data=$ProjectRoot/pyproject.toml$([System.IO.Path]::PathSeparator).",
-  "--add-data=$ProjectRoot/res/comparison/*.png:res/comparison/",
   "--add-data=$ProjectRoot/res/icons/*.png:res/icons/",
   "--add-data=$ProjectRoot/res/*.ico:res/",
   "--upx-dir=$PSScriptRoot/.upx"
@@ -34,3 +33,14 @@ if ($IsWindows) {
 }
 
 Start-Process -Wait -NoNewWindow uv -ArgumentList $(@('run', '--active', 'pyinstaller') + $arguments)
+
+Copy-Item -Path "$ProjectRoot/res/comparison" -Destination "$ProjectRoot/dist" -Recurse -Force
+
+$BUILD_NUMBER = Get-Date -Format yyMMddHHmm
+
+$compress = @{
+  Path = "$ProjectRoot/dist/comparison", "$ProjectRoot/dist/ZDCurtain.exe", "$ProjectRoot/README.md"
+  CompressionLevel = "Optimal"
+  DestinationPath = "$ProjectRoot/dist/ZDCurtain-$BUILD_NUMBER.zip"
+}
+Compress-Archive @compress

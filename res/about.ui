@@ -173,11 +173,6 @@ li.checked::marker { content: &quot;\2612&quot;; }
     </item>
     <item>
      <property name="text">
-      <string>pandas</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
       <string>pathvalidate</string>
      </property>
     </item>
@@ -234,6 +229,11 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <item>
      <property name="text">
       <string>typed-d3dshot</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>vcolorpicker</string>
      </property>
     </item>
     <item>
