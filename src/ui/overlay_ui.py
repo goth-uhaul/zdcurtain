@@ -4,7 +4,7 @@ from gen import overlay as overlay_ui
 from PySide6 import QtCore, QtWidgets
 from vcolorpicker import ColorPicker
 
-from utils import INVALID_COLOR, create_icon, to_whole_css_rgb, use_black_or_white_text
+from utils import INVALID_COLOR, ONE_SECOND, create_icon, to_whole_css_rgb, use_black_or_white_text
 
 if TYPE_CHECKING:
     from ui.zdcurtain_ui import ZDCurtain
@@ -12,6 +12,10 @@ if TYPE_CHECKING:
 
 class __OverlayWidget(QtWidgets.QWidget, overlay_ui.Ui_OverlayWidget):
     """Quick-look at load status."""
+
+    # Timers
+    timer_not_tracking_blink = QtCore.QTimer()
+    timer_not_tracking_blink.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
 
     def __init__(self, zdcurtain: "ZDCurtain"):
         super().__init__()
@@ -22,11 +26,16 @@ class __OverlayWidget(QtWidgets.QWidget, overlay_ui.Ui_OverlayWidget):
         self.__change_icon()
         self.__set_initial_color()
         self._zdcurtain_ref.update_load_time_removed(self.loads_removed_time_label)
+        self.timer_not_tracking_blink.timeout.connect(self.__blink_overlay)
+        self.overlay_blink = False
 
         self._zdcurtain_ref.after_changing_icon_signal.connect(self.__change_icon)
+        self._zdcurtain_ref.after_changing_tracking_status.connect(self.__blink_overlay)
         self._zdcurtain_ref.after_load_time_removed_changed_signal.connect(
             lambda: self._zdcurtain_ref.update_load_time_removed(self.loads_removed_time_label)
         )
+
+        self.timer_not_tracking_blink.start(ONE_SECOND)
 
         self.show()
 
@@ -36,6 +45,18 @@ class __OverlayWidget(QtWidgets.QWidget, overlay_ui.Ui_OverlayWidget):
         create_icon(self.tram_tracking_icon, self._zdcurtain_ref.tram_icon)
         create_icon(self.teleportal_tracking_icon, self._zdcurtain_ref.teleportal_icon)
         create_icon(self.egg_tracking_icon, self._zdcurtain_ref.capsule_icon)
+
+    def __blink_overlay(self):
+        blink = self.overlay_blink
+        solid_all = self._zdcurtain_ref.is_tracking
+
+        self.elevator_tracking_icon.setVisible(solid_all or blink)
+        self.tram_tracking_icon.setVisible(solid_all or blink)
+        self.teleportal_tracking_icon.setVisible(solid_all or blink)
+        self.egg_tracking_icon.setVisible(solid_all or blink)
+        self.black_screen_load_icon.setVisible(solid_all or blink)
+
+        self.overlay_blink = not self.overlay_blink
 
     def __set_initial_color(self):
         initial_color: tuple

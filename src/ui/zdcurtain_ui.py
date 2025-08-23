@@ -90,6 +90,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     after_changing_icon_signal = QtCore.Signal()
     after_load_list_changed_signal = QtCore.Signal()
     after_load_time_removed_changed_signal = QtCore.Signal()
+    after_changing_tracking_status = QtCore.Signal()
     # hotkey signals
     take_screenshot_signal = QtCore.Signal()
     # Use this signal when trying to show an error from outside the main thread
@@ -633,6 +634,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     def __begin_tracking(self):
         self.is_tracking = True
         self.begin_end_tracking_button.setText("End Tracking")
+        self.after_changing_tracking_status.emit()
 
     def end_tracking(self, *, ending_due_to_error=False):
         if not self.is_tracking:  # we're not tracking, no need to run this
@@ -672,6 +674,8 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
         if self.is_load_being_removed:
             mark_load_as_lost(self)
+
+        self.after_changing_tracking_status.emit()
 
     def __update_ui(self):
         self.__update_capture_region_label()
