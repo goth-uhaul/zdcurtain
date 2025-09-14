@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import timedelta
 from time import perf_counter_ns
 
 # Prevent PyAutoGUI and pywinctl from setting Process DPI Awareness,
@@ -93,6 +94,9 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
     after_changing_tracking_status = QtCore.Signal()
     # hotkey signals
     take_screenshot_signal = QtCore.Signal()
+    begin_tracking_signal = QtCore.Signal()
+    end_tracking_signal = QtCore.Signal()
+    clear_load_removal_session_signal = QtCore.Signal()
     # Use this signal when trying to show an error from outside the main thread
     show_error_signal = QtCore.Signal(FunctionType)
 
@@ -149,11 +153,6 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.end_screen_tracking_icon.setHidden(True)
         self.end_screen_threshold_value_line.setHidden(True)
 
-        if self.settings_dict["start_tracking_automatically"]:
-            self.begin_tracking()
-        else:
-            self.end_tracking()
-
         self.__setup_bindings()
 
         self.timer_main.start(int(ONE_SECOND / 60))
@@ -169,6 +168,14 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.show()
 
         load_settings_on_open(self)
+
+        if self.settings_dict["start_tracking_automatically"]:
+            self.begin_tracking()
+        else:
+            self.end_tracking()
+
+        if self.settings_dict["stream_overlay_open_on_open"]:
+            open_overlay(self)
 
     def __init_measurement_variables(self):
         self.load_removal_session = None
@@ -287,9 +294,14 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         create_icon(self.black_screen_load_icon, self.loading_icon_grayed)
 
     def __setup_bindings(self):
+        # hotkey signals
+        self.take_screenshot_signal.connect(self.__on_take_screenshot_button_pressed)
+        self.begin_tracking_signal.connect(self.begin_tracking)
+        self.end_tracking_signal.connect(self.end_tracking)
+        self.clear_load_removal_session_signal.connect(self.on_clear_load_removal_session_button_press)
+
         # connecting menu actions
         # file
-
         self.action_save_settings.triggered.connect(lambda: save_settings(self))
         self.action_save_settings_as.triggered.connect(lambda: save_settings_as(self))
         self.action_load_settings.triggered.connect(lambda: load_settings(self))
@@ -616,6 +628,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             self.__begin_tracking()
         elif self.load_removal_session is None:
             self.load_removal_session = LoadRemovalSession()
+            self.__begin_tracking()
         else:
             self.__begin_tracking()
 
@@ -650,13 +663,13 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                     "Warning",
                     "Ending tracking during a load can have adverse effects. "
                     + "Are you sure you want to do this?",
-                    self.__end_tracking(),
+                    self.__end_tracking,
                     None,
                 )
             else:
                 self.__end_tracking()
 
-            if not self.is_tracking:
+            if self.__should_prompt_for_export():
                 create_yes_no_dialog(
                     "Export Load Removal Session",
                     "Would you like to export the results of your load removal session to a file?",
@@ -665,6 +678,27 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                 )
         else:
             self.__end_tracking()
+
+    def __should_prompt_for_export(self):
+        if self.load_removal_session is not None and not self.is_tracking:
+            export_setting = self.settings_dict["ask_to_export_data"]
+
+            now = LocalTime().get_datetime()
+            session_started_at = self.load_removal_session.get_session_started_at().get_datetime()
+
+            match export_setting:
+                case 0:  # if there is a "transition" load
+                    return self.load_removal_session.get_transition_load_count() > 0
+                case 1:  # after 10 minutes of active session
+                    return now - session_started_at >= timedelta(minutes=10)
+                case 2:  # always
+                    return True
+                case 3:  # never
+                    return False
+                case _:
+                    raise KeyError(f"{export_setting!r} is not a valid export prompt setting")
+        else:
+            return False
 
     def __end_tracking(self):
         self.__reset_tracking_variables()
