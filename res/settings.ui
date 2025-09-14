@@ -517,7 +517,7 @@
      <x>311</x>
      <y>5</y>
      <width>341</width>
-     <height>71</height>
+     <height>161</height>
     </rect>
    </property>
    <property name="title">
@@ -568,14 +568,149 @@
      <string>Take Screenshot</string>
     </property>
    </widget>
+   <widget class="QLabel" name="begin_tracking_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>65</y>
+      <width>121</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Begin Tracking</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="begin_tracking_input">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>62</y>
+      <width>91</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="set_begin_tracking_hotkey_button">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>61</y>
+      <width>81</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Set Hotkey</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="set_end_tracking_hotkey_button">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>92</y>
+      <width>81</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Set Hotkey</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="end_tracking_input">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>93</y>
+      <width>91</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="end_tracking_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>96</y>
+      <width>121</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>End Tracking</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="clear_load_removal_session_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>128</y>
+      <width>121</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Clear Session</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="clear_load_removal_session_input">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>125</y>
+      <width>91</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="set_clear_load_removal_session_hotkey_button">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>124</y>
+      <width>81</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Set Hotkey</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QGroupBox" name="hotkey_settings_groupbox_2">
    <property name="geometry">
     <rect>
      <x>311</x>
-     <y>270</y>
+     <y>388</y>
      <width>341</width>
-     <height>101</height>
+     <height>141</height>
     </rect>
    </property>
    <property name="title">
@@ -620,12 +755,55 @@
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="QLabel" name="ask_to_export_data_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>107</y>
+      <width>111</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Ask to export data:</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="ask_to_export_data_combobox">
+    <property name="geometry">
+     <rect>
+      <x>115</x>
+      <y>105</y>
+      <width>221</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>If major loads were detected</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>After 10 minutes</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Always</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Never</string>
+     </property>
+    </item>
+   </widget>
   </widget>
   <widget class="QGroupBox" name="locations_groupbox">
    <property name="geometry">
     <rect>
      <x>311</x>
-     <y>80</y>
+     <y>170</y>
      <width>341</width>
      <height>71</height>
     </rect>
@@ -686,9 +864,9 @@
    <property name="geometry">
     <rect>
      <x>311</x>
-     <y>160</y>
+     <y>248</y>
      <width>341</width>
-     <height>101</height>
+     <height>131</height>
     </rect>
    </property>
    <property name="title">
@@ -746,6 +924,25 @@
     </property>
     <property name="checked">
      <bool>true</bool>
+    </property>
+    <property name="tristate">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="open_overlay_on_open_checkbox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>95</y>
+      <width>281</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Open Stream Overlay when opening ZDCurtain?</string>
+    </property>
+    <property name="checked">
+     <bool>false</bool>
     </property>
     <property name="tristate">
      <bool>false</bool>

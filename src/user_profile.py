@@ -26,9 +26,14 @@ class UserProfileDict(TypedDict):
     capture_device_name: str
     captured_window_title: str
     take_screenshot_hotkey: str
+    begin_tracking_hotkey: str
+    end_tracking_hotkey: str
+    clear_load_removal_session_hotkey: str
     stream_overlay_text_color: str
+    stream_overlay_open_on_open: bool
     start_tracking_automatically: bool
     clear_previous_session_on_begin_tracking: bool
+    ask_to_export_data: int
     blink_when_tracking_disabled: bool
     hide_analysis_elements: bool
     hide_frame_info: bool
@@ -76,9 +81,14 @@ DEFAULT_PROFILE = UserProfileDict(
     capture_device_name="",
     captured_window_title="",
     take_screenshot_hotkey="",
+    begin_tracking_hotkey="",
+    end_tracking_hotkey="",
+    clear_load_removal_session_hotkey="",
     stream_overlay_text_color="Automatic",
+    stream_overlay_open_on_open=False,
     start_tracking_automatically=False,
     clear_previous_session_on_begin_tracking=True,
+    ask_to_export_data=0,
     blink_when_tracking_disabled=True,
     hide_analysis_elements=False,
     hide_frame_info=False,

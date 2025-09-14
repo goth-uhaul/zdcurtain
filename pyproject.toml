@@ -1,6 +1,6 @@
 [project]
 name = "zdcurtain"
-version = "0.3.5"
+version = "0.3.6"
 description = "Load time remover for Metroid Dread"
 readme = "README.md"
 requires-python = ">=3.13"

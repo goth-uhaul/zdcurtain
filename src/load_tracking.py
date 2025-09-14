@@ -42,6 +42,9 @@ class LoadRemovalSession:
         self.__loads.append(DiscardedLoadEntry(load_type, load_discarded_at, discard_type))
         return self.__loads[-1]
 
+    def get_session_started_at(self):
+        return self.sessionInfo.startedAt
+
     def get_loads(self):
         return self.__loads
 
@@ -50,7 +53,13 @@ class LoadRemovalSession:
 
     def get_major_load_count(self):
         major_loads = [load for load in self.__loads if load.loadType != "black"]
+
         return len(major_loads)
+
+    def get_load_type_count(self, load_type):
+        loads = [load for load in self.__loads if load.loadType != load_type]
+
+        return len(loads)
 
     def get_latest_load(self):
         if self.get_load_count() > 0:

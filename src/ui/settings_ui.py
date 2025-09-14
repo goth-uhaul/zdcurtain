@@ -189,6 +189,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         self.blink_when_tracking_disabled_checkbox.setChecked(
             self._zdcurtain_ref.settings_dict["blink_when_tracking_disabled"]
         )
+        self.open_overlay_on_open_checkbox.setChecked(
+            self._zdcurtain_ref.settings_dict["stream_overlay_open_on_open"]
+        )
         # endregion
 
         # region Binding
@@ -264,18 +267,26 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 self.start_tracking_automatically_checkbox.isChecked(),
             )
         )
+        self.open_overlay_on_open_checkbox.stateChanged.connect(
+            lambda: self.__set_value(
+                "stream_overlay_open_on_open",
+                self.open_overlay_on_open_checkbox.isChecked(),
+            )
+        )
         self.clear_previous_session_on_begin_tracking_checkbox.stateChanged.connect(
             lambda: self.__set_value(
                 "clear_previous_session_on_begin_tracking",
                 self.clear_previous_session_on_begin_tracking_checkbox.isChecked(),
             )
         )
-
         self.live_capture_region_checkbox.stateChanged.connect(
             lambda: self.__set_value(
                 "live_capture_region",
                 self.live_capture_region_checkbox.isChecked(),
             )
+        )
+        self.ask_to_export_data_combobox.setCurrentIndex(
+            self._zdcurtain_ref.settings_dict["ask_to_export_data"]
         )
 
         # screenshots
@@ -318,9 +329,14 @@ def get_default_settings_from_ui():
         "capture_device_name": "",
         "captured_window_title": "",
         "take_screenshot_hotkey": default_settings_dialog.take_screenshot_input.text(),
+        "begin_tracking_hotkey": default_settings_dialog.begin_tracking_input.text(),
+        "end_tracking_hotkey": default_settings_dialog.end_tracking_input.text(),
+        "clear_load_removal_session_hotkey": default_settings_dialog.clear_load_removal_session_input.text(),
         "stream_overlay_text_color": default_settings_dialog.stream_overlay_text_color_combobox.currentText(),
+        "stream_overlay_open_on_open": default_settings_dialog.open_overlay_on_open_checkbox.isChecked(),
         "start_tracking_automatically": default_settings_dialog.start_tracking_automatically_checkbox.isChecked(),  # noqa: E501
         "clear_previous_session_on_begin_tracking": default_settings_dialog.clear_previous_session_on_begin_tracking_checkbox.isChecked(),  # noqa: E501
+        "ask_to_export_data": default_settings_dialog.ask_to_export_data_combobox.currentIndex(),
         "blink_when_tracking_disabled": default_settings_dialog.blink_when_tracking_disabled_checkbox.isChecked(),
         "hide_analysis_elements": DEFAULT_PROFILE["hide_analysis_elements"],
         "hide_frame_info": DEFAULT_PROFILE["hide_frame_info"],
@@ -502,6 +518,23 @@ def build_documentation(self):
     )
 
     self.blink_when_tracking_disabled_checkbox.setToolTip(blink_when_tracking_disabled_tooltip)
-    self.blink_when_tracking_disabled_checkbox.setToolTip(blink_when_tracking_disabled_tooltip)
+
+    stream_overlay_open_on_open_tooltip = (
+        "If this box is checked, the ZDCurtain stream overlay will open\n" + "when ZDCurtain is opened."
+    )
+
+    self.open_overlay_on_open_checkbox.setToolTip(stream_overlay_open_on_open_tooltip)
+
+    ask_to_export_data_tooltip = (
+        "When to prompt for data export:\n\n"
+        + "If major loads were detected: if the session has detected at least\n"
+        + "one of the four major loads\n"
+        + "After 10 minutes: after 10 minutes of an active load tracking session\n"
+        + "Always: always prompt\n"
+        + "Never: never prompt"
+    )
+
+    self.ask_to_export_data_label.setToolTip(ask_to_export_data_tooltip)
+    self.ask_to_export_data_combobox.setToolTip(stream_overlay_text_color_tooltip)
 
     # endregion
