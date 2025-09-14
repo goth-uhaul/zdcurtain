@@ -779,7 +779,7 @@
     </property>
     <item>
      <property name="text">
-      <string>If major loads were detected</string>
+      <string>If transition loads were detected</string>
      </property>
     </item>
     <item>

@@ -185,6 +185,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 self._zdcurtain_ref.settings_dict["stream_overlay_text_color"]
             )
         )
+        self.ask_to_export_data_combobox.setCurrentIndex(
+            self._zdcurtain_ref.settings_dict["ask_to_export_data"]
+        )
         # Overlay Settings
         self.blink_when_tracking_disabled_checkbox.setChecked(
             self._zdcurtain_ref.settings_dict["blink_when_tracking_disabled"]
@@ -285,8 +288,8 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 self.live_capture_region_checkbox.isChecked(),
             )
         )
-        self.ask_to_export_data_combobox.setCurrentIndex(
-            self._zdcurtain_ref.settings_dict["ask_to_export_data"]
+        self.ask_to_export_data_combobox.currentIndexChanged.connect(
+            lambda: self.__set_value("ask_to_export_data", self.ask_to_export_data_combobox.currentIndex())
         )
 
         # screenshots
@@ -527,8 +530,9 @@ def build_documentation(self):
 
     ask_to_export_data_tooltip = (
         "When to prompt for data export:\n\n"
-        + "If major loads were detected: if the session has detected at least\n"
-        + "one of the four major loads\n"
+        + "If transition loads were detected: if the session has detected at least\n"
+        + "one of the four major transition loads (elevator, tram, teleportal, and\n"
+        + "capsule)\n"
         + "After 10 minutes: after 10 minutes of an active load tracking session\n"
         + "Always: always prompt\n"
         + "Never: never prompt"

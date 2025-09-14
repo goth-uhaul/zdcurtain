@@ -628,6 +628,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             self.__begin_tracking()
         elif self.load_removal_session is None:
             self.load_removal_session = LoadRemovalSession()
+            self.__begin_tracking()
         else:
             self.__begin_tracking()
 
@@ -662,7 +663,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                     "Warning",
                     "Ending tracking during a load can have adverse effects. "
                     + "Are you sure you want to do this?",
-                    self.__end_tracking(),
+                    self.__end_tracking,
                     None,
                 )
             else:
@@ -679,22 +680,15 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
             self.__end_tracking()
 
     def __should_prompt_for_export(self):
-        if self.load_removal_session is not None and self.is_tracking:
+        if self.load_removal_session is not None and not self.is_tracking:
             export_setting = self.settings_dict["ask_to_export_data"]
 
             now = LocalTime().get_datetime()
             session_started_at = self.load_removal_session.get_session_started_at().get_datetime()
 
-            video_load_count = (
-                self.load_removal_session.get_load_type_count("elevator")
-                + self.load_removal_session.get_load_type_count("tram")
-                + self.load_removal_session.get_load_type_count("teleportal")
-                + self.load_removal_session.get_load_type_count("egg")
-            )
-
             match export_setting:
-                case 0:  # if there is a "video" load
-                    return video_load_count > 0
+                case 0:  # if there is a "transition" load
+                    return self.load_removal_session.get_transition_load_count() > 0
                 case 1:  # after 10 minutes of active session
                     return now - session_started_at >= timedelta(minutes=10)
                 case 2:  # always

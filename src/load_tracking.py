@@ -56,6 +56,11 @@ class LoadRemovalSession:
 
         return len(major_loads)
 
+    def get_transition_load_count(self):
+        transition_loads = [load for load in self.__loads if load.loadType not in {"black", "spinner"}]
+
+        return len(transition_loads)
+
     def get_load_type_count(self, load_type):
         loads = [load for load in self.__loads if load.loadType != load_type]
 
