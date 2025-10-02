@@ -19,7 +19,7 @@ from dateutil.tz import tzlocal
 from gen.build_vars import ZDCURTAIN_BUILD_NUMBER, ZDCURTAIN_GITHUB_REPOSITORY
 from pathvalidate import sanitize_filename
 from PySide6 import QtGui
-from PySide6.QtWidgets import QLabel, QMessageBox, QWidget
+from PySide6.QtWidgets import QApplication, QLabel, QMessageBox, QWidget
 
 if sys.platform == "win32":
     import ctypes
@@ -266,6 +266,15 @@ def get_version():
 
 def get_sanitized_filename(unsanitary_filename: str):
     return sanitize_filename(unsanitary_filename)
+
+
+def is_window_focused(name):
+    focused_window = QApplication.activeWindow()
+
+    if focused_window is not None:
+        return focused_window.objectName() == name
+
+    return False
 
 
 def create_icon(qlabel: QLabel, image: MatLike | None):
