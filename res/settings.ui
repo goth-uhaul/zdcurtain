@@ -11,19 +11,19 @@
     <x>0</x>
     <y>0</y>
     <width>738</width>
-    <height>624</height>
+    <height>652</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>738</width>
-    <height>624</height>
+    <height>652</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>738</width>
-    <height>624</height>
+    <height>652</height>
    </size>
   </property>
   <property name="font">
@@ -755,7 +755,7 @@
      <x>311</x>
      <y>418</y>
      <width>411</width>
-     <height>191</height>
+     <height>221</height>
     </rect>
    </property>
    <property name="title">
@@ -903,6 +903,44 @@
     <property name="tristate">
      <bool>false</bool>
     </property>
+   </widget>
+   <widget class="QLabel" name="default_export_format_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>191</y>
+      <width>181</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Default export format:</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="default_export_format_combobox">
+    <property name="geometry">
+     <rect>
+      <x>181</x>
+      <y>187</y>
+      <width>221</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>JSON (.json)</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Microsoft Excel / LibreOffice (.xlsx)</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Comma-separated Text File (.csv)</string>
+     </property>
+    </item>
    </widget>
   </widget>
   <widget class="QGroupBox" name="locations_groupbox">

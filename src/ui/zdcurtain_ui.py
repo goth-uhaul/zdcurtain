@@ -243,7 +243,9 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
                     create_yes_no_dialog(
                         "Export Load Removal Session",
                         "Would you like to export the results of your load removal session to a file?",
-                        lambda: export_tracked_loads(self.load_removal_session),
+                        lambda: export_tracked_loads(
+                            self.load_removal_session, self.settings_dict["default_export_format"]
+                        ),
                         None,
                     )
             else:
@@ -253,7 +255,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.__bind_icons()
 
     def __init_measurement_variables(self):
-        self.load_removal_session = None
+        self.load_removal_session = LoadRemovalSession()
         self.is_tracking = False
 
         # load classification and measurement
@@ -383,7 +385,9 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.action_save_settings_as.triggered.connect(lambda: save_settings_as(self))
         self.action_load_settings.triggered.connect(lambda: load_settings(self))
         self.action_export_tracked_loads.triggered.connect(
-            lambda: export_tracked_loads(self.load_removal_session)
+            lambda: export_tracked_loads(
+                self.load_removal_session, self.settings_dict["default_export_format"]
+            )
         )
         self.action_exit.triggered.connect(self.closeEvent)
 

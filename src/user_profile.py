@@ -37,6 +37,7 @@ class UserProfileDict(TypedDict):
     track_hotkeys_globally: bool
     ask_to_export_data: int
     prompt_for_destructive_actions: int
+    default_export_format: int
     blink_when_tracking_disabled: bool
     hide_analysis_elements: bool
     hide_frame_info: bool
@@ -95,6 +96,7 @@ DEFAULT_PROFILE = UserProfileDict(
     track_hotkeys_globally=True,
     ask_to_export_data=0,
     prompt_for_destructive_actions=0,
+    default_export_format=1,
     blink_when_tracking_disabled=True,
     hide_analysis_elements=False,
     hide_frame_info=False,

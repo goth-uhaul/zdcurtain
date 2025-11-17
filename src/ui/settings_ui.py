@@ -194,6 +194,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         self.prompt_for_destructive_actions_combobox.setCurrentIndex(
             self._zdcurtain_ref.settings_dict["prompt_for_destructive_actions"]
         )
+        self.default_export_format_combobox.setCurrentIndex(
+            self._zdcurtain_ref.settings_dict["default_export_format"]
+        )
         # Overlay Settings
         self.blink_when_tracking_disabled_checkbox.setChecked(
             self._zdcurtain_ref.settings_dict["blink_when_tracking_disabled"]
@@ -309,6 +312,12 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
             )
         )
 
+        self.default_export_format_combobox.currentIndexChanged.connect(
+            lambda: self.__set_value(
+                "default_export_format", self.default_export_format_combobox.currentIndex()
+            )
+        )
+
         # screenshots
         self.locations_screenshot_folder_input.setText(
             self._zdcurtain_ref.settings_dict["screenshot_directory"]
@@ -360,6 +369,7 @@ def get_default_settings_from_ui():
         "track_hotkeys_globally": default_settings_dialog.track_hotkeys_globally_checkbox.isChecked(),
         "ask_to_export_data": default_settings_dialog.ask_to_export_data_combobox.currentIndex(),
         "prompt_for_destructive_actions": default_settings_dialog.prompt_for_destructive_actions_combobox.currentIndex(),
+        "default_export_format": DEFAULT_PROFILE["default_export_format"],
         "blink_when_tracking_disabled": default_settings_dialog.blink_when_tracking_disabled_checkbox.isChecked(),
         "hide_analysis_elements": DEFAULT_PROFILE["hide_analysis_elements"],
         "hide_frame_info": DEFAULT_PROFILE["hide_frame_info"],
@@ -610,5 +620,10 @@ def build_documentation(self):  # noqa: PLR0914, PLR0915
 
     self.prompt_for_destructive_actions_label.setToolTip(prompt_for_destructive_actions_tooltip)
     self.prompt_for_destructive_actions_combobox.setToolTip(prompt_for_destructive_actions_tooltip)
+
+    default_export_format_tooltip = "The default export format for load data."
+
+    self.default_export_format_label.setToolTip(default_export_format_tooltip)
+    self.default_export_format_combobox.setToolTip(default_export_format_tooltip)
 
     # endregion
