@@ -29,11 +29,15 @@ class UserProfileDict(TypedDict):
     begin_tracking_hotkey: str
     end_tracking_hotkey: str
     clear_load_removal_session_hotkey: str
+    restart_load_removal_session_hotkey: str
     stream_overlay_text_color: str
     stream_overlay_open_on_open: bool
     start_tracking_automatically: bool
     clear_previous_session_on_begin_tracking: bool
+    track_hotkeys_globally: bool
     ask_to_export_data: int
+    prompt_for_destructive_actions: int
+    default_export_format: int
     blink_when_tracking_disabled: bool
     hide_analysis_elements: bool
     hide_frame_info: bool
@@ -84,11 +88,15 @@ DEFAULT_PROFILE = UserProfileDict(
     begin_tracking_hotkey="",
     end_tracking_hotkey="",
     clear_load_removal_session_hotkey="",
+    restart_load_removal_session_hotkey="",
     stream_overlay_text_color="Automatic",
     stream_overlay_open_on_open=False,
     start_tracking_automatically=False,
     clear_previous_session_on_begin_tracking=True,
+    track_hotkeys_globally=True,
     ask_to_export_data=0,
+    prompt_for_destructive_actions=0,
+    default_export_format=1,
     blink_when_tracking_disabled=True,
     hide_analysis_elements=False,
     hide_frame_info=False,

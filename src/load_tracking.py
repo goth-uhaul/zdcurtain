@@ -267,10 +267,23 @@ class LoadRemovalSessionInfo:
         }
 
 
-def export_tracked_loads(load_removal_session):
+def export_tracked_loads(load_removal_session, filter_index_from_options):
     filename = sanitize_filename(f"load-removal-session_{load_removal_session.sessionInfo.startedAt.date}")
+
+    match filter_index_from_options:
+        case 0:
+            selected_filter = "JSON (*.json)"
+        case 1:
+            selected_filter = "Excel Document (*.xlsx)"
+        case 2:
+            selected_filter = "CSV UTF-8 (comma delimited) (*.csv)"
+        case _:
+            selected_filter = "Excel Document (*.xlsx)"
+
     selected_file_path, selected_filter = QFileDialog.getSaveFileName(
-        filter="JSON (*.json);;Excel Document (*.xlsx);;CSV UTF-8 (comma delimited) (*.csv)", dir=filename
+        filter="JSON (*.json);;Excel Document (*.xlsx);;CSV UTF-8 (comma delimited) (*.csv)",
+        dir=filename,
+        selectedFilter=selected_filter,
     )
 
     data_format = None

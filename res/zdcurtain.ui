@@ -2165,7 +2165,7 @@
       <x>649</x>
       <y>-5</y>
       <width>161</width>
-      <height>321</height>
+      <height>381</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_11">
@@ -2291,6 +2291,35 @@
        </property>
        <property name="text">
         <string>Clear Load
+Removal Data</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="restart_load_removal_session_button">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>144</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::FocusPolicy::NoFocus</enum>
+       </property>
+       <property name="text">
+        <string>Restart Load
 Removal Session</string>
        </property>
       </widget>
@@ -2435,6 +2464,7 @@ Removal Session</string>
     </property>
     <addaction name="action_reset_statistics"/>
     <addaction name="action_clear_load_removal_session"/>
+    <addaction name="action_restart_load_removal_session"/>
     <addaction name="separator"/>
     <addaction name="action_settings"/>
    </widget>
@@ -2529,7 +2559,12 @@ Removal Session</string>
   </action>
   <action name="action_clear_load_removal_session">
    <property name="text">
-    <string>Clear Load Removal Session</string>
+    <string>Clear Load Removal Data</string>
+   </property>
+  </action>
+  <action name="action_restart_load_removal_session">
+   <property name="text">
+    <string>Restart Load Removal Session</string>
    </property>
   </action>
  </widget>

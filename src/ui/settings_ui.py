@@ -180,6 +180,9 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         self.clear_previous_session_on_begin_tracking_checkbox.setChecked(
             self._zdcurtain_ref.settings_dict["clear_previous_session_on_begin_tracking"]
         )
+        self.track_hotkeys_globally_checkbox.setChecked(
+            self._zdcurtain_ref.settings_dict["track_hotkeys_globally"]
+        )
         self.stream_overlay_text_color_combobox.setCurrentIndex(
             self.__stream_overlay_text_color.index(
                 self._zdcurtain_ref.settings_dict["stream_overlay_text_color"]
@@ -187,6 +190,12 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         )
         self.ask_to_export_data_combobox.setCurrentIndex(
             self._zdcurtain_ref.settings_dict["ask_to_export_data"]
+        )
+        self.prompt_for_destructive_actions_combobox.setCurrentIndex(
+            self._zdcurtain_ref.settings_dict["prompt_for_destructive_actions"]
+        )
+        self.default_export_format_combobox.setCurrentIndex(
+            self._zdcurtain_ref.settings_dict["default_export_format"]
         )
         # Overlay Settings
         self.blink_when_tracking_disabled_checkbox.setChecked(
@@ -282,6 +291,12 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
                 self.clear_previous_session_on_begin_tracking_checkbox.isChecked(),
             )
         )
+        self.track_hotkeys_globally_checkbox.stateChanged.connect(
+            lambda: self.__set_value(
+                "track_hotkeys_globally",
+                self.track_hotkeys_globally_checkbox.isChecked(),
+            )
+        )
         self.live_capture_region_checkbox.stateChanged.connect(
             lambda: self.__set_value(
                 "live_capture_region",
@@ -290,6 +305,17 @@ class __SettingsWidget(QtWidgets.QWidget, settings_ui.Ui_SettingsWidget):
         )
         self.ask_to_export_data_combobox.currentIndexChanged.connect(
             lambda: self.__set_value("ask_to_export_data", self.ask_to_export_data_combobox.currentIndex())
+        )
+        self.prompt_for_destructive_actions_combobox.currentIndexChanged.connect(
+            lambda: self.__set_value(
+                "prompt_for_destructive_actions", self.prompt_for_destructive_actions_combobox.currentIndex()
+            )
+        )
+
+        self.default_export_format_combobox.currentIndexChanged.connect(
+            lambda: self.__set_value(
+                "default_export_format", self.default_export_format_combobox.currentIndex()
+            )
         )
 
         # screenshots
@@ -335,11 +361,15 @@ def get_default_settings_from_ui():
         "begin_tracking_hotkey": default_settings_dialog.begin_tracking_input.text(),
         "end_tracking_hotkey": default_settings_dialog.end_tracking_input.text(),
         "clear_load_removal_session_hotkey": default_settings_dialog.clear_load_removal_session_input.text(),
+        "restart_load_removal_session_hotkey": default_settings_dialog.restart_load_removal_session_input.text(),
         "stream_overlay_text_color": default_settings_dialog.stream_overlay_text_color_combobox.currentText(),
         "stream_overlay_open_on_open": default_settings_dialog.open_overlay_on_open_checkbox.isChecked(),
         "start_tracking_automatically": default_settings_dialog.start_tracking_automatically_checkbox.isChecked(),  # noqa: E501
         "clear_previous_session_on_begin_tracking": default_settings_dialog.clear_previous_session_on_begin_tracking_checkbox.isChecked(),  # noqa: E501
+        "track_hotkeys_globally": default_settings_dialog.track_hotkeys_globally_checkbox.isChecked(),
         "ask_to_export_data": default_settings_dialog.ask_to_export_data_combobox.currentIndex(),
+        "prompt_for_destructive_actions": default_settings_dialog.prompt_for_destructive_actions_combobox.currentIndex(),
+        "default_export_format": DEFAULT_PROFILE["default_export_format"],
         "blink_when_tracking_disabled": default_settings_dialog.blink_when_tracking_disabled_checkbox.isChecked(),
         "hide_analysis_elements": DEFAULT_PROFILE["hide_analysis_elements"],
         "hide_frame_info": DEFAULT_PROFILE["hide_frame_info"],
@@ -376,7 +406,7 @@ def get_default_settings_from_ui():
     return default_settings
 
 
-def build_documentation(self):
+def build_documentation(self):  # noqa: PLR0914, PLR0915
     # Build tooltip instructions  # fmt: skip
     fps_limit_tooltip = (
         "Limit how fast image analysis runs. Higher values will \n"
@@ -487,6 +517,35 @@ def build_documentation(self):
     self.take_screenshot_input.setToolTip(take_screenshot_hotkey_tooltip)
     self.set_take_screenshot_hotkey_button.setToolTip(take_screenshot_hotkey_tooltip)
 
+    begin_tracking_tooltip = "Starts analyzing the game feed when pressed."
+
+    self.begin_tracking_label.setToolTip(begin_tracking_tooltip)
+    self.begin_tracking_input.setToolTip(begin_tracking_tooltip)
+    self.set_begin_tracking_hotkey_button.setToolTip(begin_tracking_tooltip)
+
+    end_tracking_tooltip = "Stops analyzing the game feed when pressed."
+
+    self.end_tracking_label.setToolTip(end_tracking_tooltip)
+    self.end_tracking_input.setToolTip(end_tracking_tooltip)
+    self.set_end_tracking_hotkey_button.setToolTip(end_tracking_tooltip)
+
+    clear_session_tooltip = (
+        "Erases current load removal session data when pressed.\n" + "Does NOT change tracking state."
+    )
+
+    self.clear_load_removal_session_label.setToolTip(clear_session_tooltip)
+    self.clear_load_removal_session_input.setToolTip(clear_session_tooltip)
+    self.set_clear_load_removal_session_hotkey_button.setToolTip(clear_session_tooltip)
+
+    restart_session_tooltip = (
+        "When pressed, stops any tracking taking place,\n"
+        + "destroys the current load removal session, and restarts tracking."
+    )
+
+    self.restart_load_removal_session_label.setToolTip(restart_session_tooltip)
+    self.restart_load_removal_session_input.setToolTip(restart_session_tooltip)
+    self.set_restart_load_removal_session_hotkey_button.setToolTip(restart_session_tooltip)
+
     start_tracking_automatically_tooltip = (
         "If this box is checked, ZDCurtain will automatically start\n"
         + "tracking loads as soon as a capture source is loaded."
@@ -502,6 +561,14 @@ def build_documentation(self):
     self.clear_previous_session_on_begin_tracking_checkbox.setToolTip(
         clear_previous_session_on_begin_tracking_tooltip
     )
+
+    track_hotkeys_globally_tooltip = (
+        "If this box is checked, ZDCurtain will track hotkeys when the program\n"
+        + "does not have focus. This can interfere with other programs that use global\n"
+        + "hotkeys (ex. LiveSplit) as well as with typing or other keyboard operations."
+    )
+
+    self.track_hotkeys_globally_checkbox.setToolTip(track_hotkeys_globally_tooltip)
 
     stream_overlay_text_color_tooltip = (
         '"Automatic" changes the text color to either black or white\n'
@@ -539,6 +606,24 @@ def build_documentation(self):
     )
 
     self.ask_to_export_data_label.setToolTip(ask_to_export_data_tooltip)
-    self.ask_to_export_data_combobox.setToolTip(stream_overlay_text_color_tooltip)
+    self.ask_to_export_data_combobox.setToolTip(ask_to_export_data_tooltip)
+
+    prompt_for_destructive_actions_tooltip = (
+        "When to prompt for destructive actions, like clearing or restarting load sessions:\n\n"
+        + "If transition loads were detected: if the session has detected at least\n"
+        + "one of the four major transition loads (elevator, tram, teleportal, and\n"
+        + "capsule)\n"
+        + "After 10 minutes: after 10 minutes of an active load tracking session\n"
+        + "Always: always prompt\n"
+        + "Never: never prompt"
+    )
+
+    self.prompt_for_destructive_actions_label.setToolTip(prompt_for_destructive_actions_tooltip)
+    self.prompt_for_destructive_actions_combobox.setToolTip(prompt_for_destructive_actions_tooltip)
+
+    default_export_format_tooltip = "The default export format for load data."
+
+    self.default_export_format_label.setToolTip(default_export_format_tooltip)
+    self.default_export_format_combobox.setToolTip(default_export_format_tooltip)
 
     # endregion

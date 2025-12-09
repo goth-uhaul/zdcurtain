@@ -2,7 +2,7 @@
 
 Remove load times from your copy of Metroid Dread for Nintendo Switch! 
 
-<p align="center"><img src="./docs/zdcurtain-0.3.5.gif" alt="Example" /></p>
+<p align="center"><img src="./docs/zdcurtain-0.3.7.gif" alt="Example" /></p>
 
 ## Major features
 

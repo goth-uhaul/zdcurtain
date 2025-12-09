@@ -17,9 +17,27 @@ pyautogui.FAILSAFE = False
 SET_HOTKEY_TEXT = "Set Hotkey"
 PRESS_A_KEY_TEXT = "Press a key..."
 
-CommandStr = Literal["take_screenshot", "begin_tracking", "end_tracking", "clear_load_removal_session"]
-Hotkey = Literal["take_screenshot", "begin_tracking", "end_tracking", "clear_load_removal_session"]
-HOTKEYS = ("take_screenshot", "begin_tracking", "end_tracking", "clear_load_removal_session")
+CommandStr = Literal[
+    "take_screenshot",
+    "begin_tracking",
+    "end_tracking",
+    "clear_load_removal_session",
+    "restart_load_removal_session",
+]
+Hotkey = Literal[
+    "take_screenshot",
+    "begin_tracking",
+    "end_tracking",
+    "clear_load_removal_session",
+    "restart_load_removal_session",
+]
+HOTKEYS = (
+    "take_screenshot",
+    "begin_tracking",
+    "end_tracking",
+    "clear_load_removal_session",
+    "restart_load_removal_session",
+)
 
 
 def remove_all_hotkeys():
@@ -57,6 +75,8 @@ def send_command(zdcurtain: "ZDCurtain", command: CommandStr):
             _send_hotkey(zdcurtain.settings_dict["end_tracking_hotkey"])
         case "clear_load_removal_session":
             _send_hotkey(zdcurtain.settings_dict["clear_load_removal_session_hotkey"])
+        case "restart_load_removal_session":
+            _send_hotkey(zdcurtain.settings_dict["restart_load_removal_session_hotkey"])
         case _:
             raise KeyError(f"{command!r} is not a valid command")
 
@@ -181,6 +201,7 @@ def __read_hotkey():
     names: list[str] = []
     while True:
         keyboard_event = keyboard.read_event(True)
+
         # LiveSplit supports modifier keys as the last key, so any keyup means end of hotkey
         if keyboard_event.event_type == keyboard.KEY_UP:
             # Unless keyup is also the very first event,
