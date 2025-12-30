@@ -2,7 +2,7 @@
 
 Remove load times from your copy of Metroid Dread for Nintendo Switch! 
 
-<p align="center"><img src="./docs/zdcurtain-0.3.7.gif" alt="Example" /></p>
+<p align="center"><img src="./docs/zdcurtain-0.3.7.gif" alt="A short animated GIF of the Python program 'ZDCurtain'." /></p>
 
 ## Major features
 
@@ -15,7 +15,7 @@ ZDCurtain works across all environments:
 
 ## How does it work?
 
-ZDCurtain works by comparing a screen capture of the game to common comparison images used in Metroid Dread's load screens. If ZDCurtain is confident that what it's seeing is a load screen, it will count up the amount of time that should be removed until the load is complete, while also accounting for when the load started. It also removes black screen load times by comparing the a slice of the top of the game feed to solid black and pausing your game timer until the feed is no longer solid black. At the end of the run, you will have a time value that is the sum of all loads removed from the run; you can then subtract this from your Real-Time Attack (RTA) time in order to get your Loads Removed Time (LRT).
+ZDCurtain works by comparing a screen capture of the game to common comparison images used in Metroid Dread's load screens. If ZDCurtain is confident that what it's seeing is a load screen, it will count up the amount of time that should be removed until the load is complete, while also accounting for when the load started. At the end of the run, you will have a time value that is the sum of all loads removed from the run; you can then subtract this from your Real-Time Attack (RTA) time in order to get your Loads Removed Time (LRT).
 
 ZDCurtain eliminates:
 
@@ -53,7 +53,7 @@ Upon loading ZDCurtain, you will be presented with the main capture analysis das
 
 ### Similarity Bar
 
-<p align="center"><img src="./docs/zdcurtain-doc-2.png" alt="Example" /></p>
+<p align="center"><img src="./docs/zdcurtain-doc-2.png" alt="A screenshot of the Python program 'ZDCurtain'." /></p>
 
 1. The type of load the bar represents.
 2. The current similarity value.
@@ -62,7 +62,7 @@ Upon loading ZDCurtain, you will be presented with the main capture analysis das
 
 ### Image Analysis Indicators
 
-<p align="center"><img src="./docs/zdcurtain-doc-3.png" alt="Example" /></p>
+<p align="center"><img src="./docs/zdcurtain-doc-3.png" alt="A screenshot of the Python program 'ZDCurtain'." /></p>
 
 1. How dark the Capture Analysis Window currently is.
 2. The average grayscale color of the Capture Analysis Window. The color of all pixels are averaged to determine this value.
@@ -113,3 +113,4 @@ ZDCurtain is compatible with Windows 10 and 11.
 - [Hobbit](https://bsky.app/profile/hobbit1697.bsky.social) for testing support
 - [Manijure](https://bsky.app/profile/manijure.hijumpboots.com) for testing support
 - Trisha for providing useful information on edge cases
+
