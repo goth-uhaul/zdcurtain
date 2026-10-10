@@ -139,21 +139,6 @@ def perform_similarity_analysis(_zdcurtain_ref: "ZDCurtain"):
     )
 
     images = [
-        zd.comparison_capsule_power.image_data,
-        zd.comparison_capsule_varia.image_data,
-        zd.comparison_capsule_gravity.image_data,
-    ]
-
-    zd.similarity_to_egg = (
-        __perform_similarity_analysis_for_images(
-            zdsettings["similarity_algorithm_egg"],
-            zd.get_capture_view_by_name(zdsettings["capture_view_egg"]),
-            images,
-        )
-        * 100
-    )
-
-    images = [
         zd.comparison_end_screen.image_data,
     ]
 
