@@ -658,9 +658,6 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
         self.active_load_type = "none"
         self.potential_load_type = "none"
         self.load_cooldown_type = "none"
-        self.single_load_time_removed_ms = 0.0
-        self.load_time_removed_ms = 0.0
-        self.load_cooldown_timestamp = 0
 
         # frame classification
         self.average_luminance = 0.0
@@ -1110,7 +1107,7 @@ class ZDCurtain(QMainWindow, zdcurtain_ui.Ui_ZDCurtain):
 
         def exit_program(_zdcurtain_ref, event) -> NoReturn:
             _zdcurtain_ref.capture_method.close()
-            if event is not None:
+            if event is not None and not isinstance(event, bool):
                 event.accept()
             sys.exit()
 

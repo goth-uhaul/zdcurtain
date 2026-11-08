@@ -1,6 +1,6 @@
 # ZDCurtain Load Remover
 
-Remove load times from your copy of Metroid Dread for Nintendo Switch! 
+Remove load times from your copy of Metroid Dread for Nintendo Switch!
 
 <p align="center"><img src="./docs/zdcurtain-0.3.7.gif" alt="Example" /></p>
 
@@ -92,12 +92,11 @@ Once your setup is properly calibrated, you should be good to go! At this point,
 
 ## Known Limitations
 
-- __**You must provide a clean, uncropped game feed to ZDCurtain in order for it to work.**__ This means no stream layouts or alerts can obscure the view that ZDCurtain has to the game feed. To launch a clean game feed in OBS, either set your OBS Virtual Camera to the output of your capture card, or right-click your capture card source and click "Open Source Projector", then click "New window". **Resize your projector window so that it is *at least* 640x360 in resolution,** right-click the projector window, and select "Fit window to content".
+- ****You must provide a clean, uncropped game feed to ZDCurtain in order for it to work.**** This means no stream layouts or alerts can obscure the view that ZDCurtain has to the game feed. To launch a clean game feed in OBS, either set your OBS Virtual Camera to the output of your capture card, or right-click your capture card source and click "Open Source Projector", then click "New window". **Resize your projector window so that it is *at least* 640x360 in resolution,** right-click the projector window, and select "Fit window to content".
 - The window that you are capturing from cannot be minimized.
 - For now, ZDCurtain only supports "Default Brightness" (the middle of the brightness slider) on a Switch where the RGB Range is set to "Limited". Full color range support will be added in a future release. Ensure that your color range in your video capture stack (capture card, OBS, etc.) matches the RGB Range on your Nintendo Switch console for best results.
 - ZDCurtain does not support streams where stream layouts or alerts obscure the game feed view. This will potentially be addressed in a future release.
 - ZDCurtain does not support captures where the game console is being filmed with a camera. This will potentially be addressed in a future release.
-
 
 ## Compatibility
 
