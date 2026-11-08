@@ -1,44 +1,50 @@
 [project]
 name = "zdcurtain"
-version = "0.3.7"
+version = "0.3.8"
 description = "Load time remover for Metroid Dread"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "keyboard>=0.13.5",
-    "numpy>=2.3.2",
-    "opencv-contrib-python-headless==4.11.0.86",
-    "openpyxl>=3.1.5",
-    "pathvalidate>=3.3.1",
-    "pyautogui>=0.9.54",
-    "pygrabber>=0.2",
-    "pyinstaller>=6.14.2",
-    "pyside6>=6.9.1",
-    "python-dateutil>=2.9.0.post0",
-    "pywin32>=311",
-    "pywinctl>=0.4.1",
-    "scikit-image>=0.25.2",
-    "tomli-w>=1.2.0",
-    "typed-d3dshot>=1.0.1",
-    "vcolorpicker>=1.4.5",
-    "winrt-windows-foundation>=3.2.1",
+  "keyboard>=0.13.5",
+  "numpy>=2.3.2",
+  "opencv-contrib-python-headless==4.11.0.86",
+  "openpyxl>=3.1.5",
+  "pathvalidate>=3.3.1",
+  "pyautogui>=0.9.54",
+  "pygrabber>=0.2",
+  "pyinstaller>=6.14.2",
+  "pyside6>=6.9.1",
+  "python-dateutil>=2.9.0.post0",
+  "pywin32>=311",
+  "pywinctl>=0.4.1",
+  "scikit-image>=0.25.2",
+  "tomli-w>=1.2.0",
+  "typed-d3dshot>=1.0.1",
+  "vcolorpicker>=1.4.5",
+  "winrt-windows-foundation>=3.2.1",
 ]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.12.5",
-    "types-pywin32>=311.0.0.20250723",
-    "winrt-windows-graphics>=3.2.1",
-    "winrt-windows-graphics-capture>=3.2.1",
-    "winrt-windows-graphics-capture-interop>=3.2.1",
-    "winrt-windows-graphics-directx>=3.2.1",
-    "winrt-windows-graphics-directx-direct3d11>=3.2.1",
-    "winrt-windows-graphics-directx-direct3d11-interop>=3.2.1",
-    "winrt-windows-graphics-imaging>=3.2.1",
+  "ruff>=0.12.5",
+  "types-pywin32>=311.0.0.20250723",
+  "winrt-windows-graphics-capture-interop>=3.2.1",
+  "winrt-windows-graphics-capture>=3.2.1",
+  "winrt-windows-graphics-directx-direct3d11-interop>=3.2.1",
+  "winrt-windows-graphics-directx-direct3d11>=3.2.1",
+  "winrt-windows-graphics-directx>=3.2.1",
+  "winrt-windows-graphics-imaging>=3.2.1",
+  "winrt-windows-graphics>=3.2.1",
 ]
 
 [tool.pyside6-project]
-files = ["res/about.ui", "res/overlay.ui", "res/settings.ui", "res/zdcurtain.ui", "resources.qrc"]
+files = [
+  "res/about.ui",
+  "res/overlay.ui",
+  "res/settings.ui",
+  "res/zdcurtain.ui",
+  "resources.qrc",
+]
 
 [tool.uv]
 find-links = ["res/wheels"]

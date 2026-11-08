@@ -2,11 +2,13 @@
 
 & "$PSScriptRoot/compile_resources.ps1"
 
-$ProjectRoot = "$PSScriptRoot/.."
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
 $SupportsSplashScreen = [System.Convert]::ToBoolean($(uv run --active python -c "import _tkinter; print(hasattr(_tkinter, '__file__'))"))
 
+$AppEntryPoint = Join-Path -Path $ProjectRoot -ChildPath "src" -AdditionalChildPath "App.py"
+
 $arguments = @(
-  "$ProjectRoot/src/App.py",
+  "$AppEntryPoint",
   '--name ZDCurtain'
   '--onefile',
   '--windowed',
@@ -20,6 +22,7 @@ $arguments = @(
   "--add-data=$ProjectRoot/pyproject.toml$([System.IO.Path]::PathSeparator).",
   "--add-data=$ProjectRoot/res/icons/*.png:res/icons/",
   "--add-data=$ProjectRoot/res/*.ico:res/",
+  "--add-data=$ProjectRoot/res/comparison/*.png:res/comparison/",
   "--upx-dir=$PSScriptRoot/.upx"
   "--icon=$ProjectRoot/res/icon.ico")
 if ($SupportsSplashScreen) {
@@ -32,15 +35,16 @@ if ($IsWindows) {
     '--hidden-import=winrt.windows.foundation')
 }
 
-Start-Process -Wait -NoNewWindow uv -ArgumentList $(@('run', '--active', 'pyinstaller') + $arguments)
+Set-Location $ProjectRoot
 
-Copy-Item -Path "$ProjectRoot/res/comparison" -Destination "$ProjectRoot/dist" -Recurse -Force
+Start-Process -Wait -NoNewWindow uv -ArgumentList $(@('run', '--active', 'pyinstaller') + $arguments)
 
 $BUILD_NUMBER = Get-Date -Format yyMMddHHmm
 
 $compress = @{
-  Path = "$ProjectRoot/dist/comparison", "$ProjectRoot/dist/ZDCurtain.exe", "$ProjectRoot/README.md"
+  Path = "$ProjectRoot/dist/ZDCurtain.exe", "$ProjectRoot/README.md"
   CompressionLevel = "Optimal"
   DestinationPath = "$ProjectRoot/dist/ZDCurtain-$BUILD_NUMBER.zip"
 }
+
 Compress-Archive @compress

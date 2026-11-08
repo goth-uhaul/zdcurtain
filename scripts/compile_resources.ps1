@@ -1,7 +1,8 @@
 #! /usr/bin/pwsh
 
 $originalDirectory = $pwd
-Set-Location "$PSScriptRoot/.."
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
+Set-Location $ProjectRoot
 
 New-Item ./src/gen -ItemType directory -Force | Out-Null
 New-Item ./src/gen/__init__.py -ItemType File -Force | Out-Null
@@ -19,7 +20,7 @@ foreach ($file in $files) {
 }
 Write-Host 'Generated code from .ui files'
 
-$build_vars_path = "$PSScriptRoot/../src/gen/build_vars.py"
+$build_vars_path = "$ProjectRoot/src/gen/build_vars.py"
 If ($Env:GITHUB_EXCLUDE_BUILD_NUMBER -eq $true
   # -or ($Env:GITHUB_EVENT_NAME -eq 'push' -and $Env:GITHUB_REF_NAME -eq 'main')
 ) {

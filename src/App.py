@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import os
 import sys
 
 # Prevent PyAutoGUI and pywinctl from setting Process DPI Awareness,
@@ -20,6 +21,7 @@ if sys.platform == "win32":
 
 import logging
 import signal
+from pathlib import Path
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QApplication
@@ -27,6 +29,13 @@ from PySide6.QtWidgets import QApplication
 import error_messages
 from ui.zdcurtain_ui import ZDCurtain
 from utils import FROZEN, list_processes, resource_path
+
+if getattr(sys, "frozen", False):
+    APP_DIR = Path(sys.executable).resolve().parent
+    os.chdir(APP_DIR)
+else:
+    APP_DIR = Path(__file__).resolve().parent
+    os.chdir(APP_DIR)
 
 
 def main():
